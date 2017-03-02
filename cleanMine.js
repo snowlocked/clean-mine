@@ -304,7 +304,7 @@ cleanMineBoard.addEventListener('click', function(e) {
     drawShowMapArray(exploreMap);
 })
 
-drawChessBoard(boardWidth, boardHeight);
+drawBoard(boardWidth, boardHeight);
 
 /**
  * [modUnknown 当该点被开采或被标记后，其周围的图块自减1]
