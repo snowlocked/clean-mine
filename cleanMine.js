@@ -1,4 +1,4 @@
-var saoleiBoard = document.getElementById('saolei-board');
+var cleanMineBoard = document.getElementById('cleanMine-board');
 
 // 定义宽高格子个数
 var boardWidth = 24,
@@ -6,7 +6,7 @@ var boardWidth = 24,
 // 定义格子边长
 var squareWidth = 30;
 // 定义雷的个数
-var leiNum = 99;
+var mineNum = 99;
 // 定义数字颜色
 var numCorlor = {
     "1": '#0805dc',
@@ -18,15 +18,15 @@ var numCorlor = {
     "7": '#000',
     "8": '#999',
     "flag": './img/flag.jpg',
-    "lei": './img/lei.jpg'
+    "mine": './img/mine.jpg'
 }
 
 // 定义地图数组（二维）坐标值为0为安全区域，坐标值为1为雷
 var map = [];
 // 定义显示地图
 var showMapArray = [];
-// 当前开采地图,-1为未开采
-var exploreMap = initArray(-1);
+// 当前开采地图,9为未开采
+var exploreMap = initArray(9);
 //计算两个板块的共同部分，注意：这里编号代表相邻程度。从0到23，分别从左到右，从上到下。
 // common为5维数组[boardWidth][boardHeight][5][5][4]
 var common = function() {
@@ -64,12 +64,17 @@ var unknownMinesArray = initArray(8);
 // 怀疑有雷数组
 var suspectMinesArray = initArray(0);
 
-var context = saoleiBoard.getContext('2d');
+var context = cleanMineBoard.getContext('2d');
 
-// 画格子
-function drawChessBoard(x, y) {
-    saoleiBoard.width = squareWidth * (x + 1);
-    saoleiBoard.height = squareWidth * (y + 1);
+/**
+ * [drawBoard 画格子]
+ * @param  {[type]} x [宽度格子数]
+ * @param  {[type]} y [高度格子数]
+ * @return {[type]}   [description]
+ */
+function drawBoard(x, y) {
+    cleanMineBoard.width = squareWidth * (x + 1);
+    cleanMineBoard.height = squareWidth * (y + 1);
     context.strokeStyle = "#000";
     // 画横线
     for (var i = 0; i < x + 1; i++) {
@@ -85,7 +90,13 @@ function drawChessBoard(x, y) {
     }
 }
 
-// 画数字,旗子标记,雷
+/**
+ * [drawFlag 画数字、旗子、雷]
+ * @param  {[type]} status [数字、旗子、雷的值]
+ * @param  {[type]} x      [横坐标]
+ * @param  {[type]} y      [纵坐标]
+ * @return {[type]}        [description]
+ */
 function drawFlag(status, x, y) {
     if (status > 0 && status < 9) {
         context.font = squareWidth * 0.8 + 'px bold sans-serif';
@@ -100,7 +111,13 @@ function drawFlag(status, x, y) {
         drawPic(status, x, y);
     }
 }
-// 画图片
+/**
+ * [drawPic 画图片]
+ * @param  {[type]} status [图片名称]
+ * @param  {[type]} x      [横坐标]
+ * @param  {[type]} y      [纵坐标]
+ * @return {[type]}        [description]
+ */
 function drawPic(status, x, y) {
     var img = new Image();
     img.src = numCorlor[status];
@@ -108,7 +125,10 @@ function drawPic(status, x, y) {
         context.drawImage(img, (x + 0.5) * squareWidth, (y + 0.5) * squareWidth, squareWidth, squareWidth);
     };
 }
-// 生成随机数坐标
+/**
+ * [random 生成随机数坐标]
+ * @return {[object]} [{x:横坐标,y:纵坐标}]
+ */
 function random() {
     var rx = parseInt(Math.random() * boardWidth),
         ry = parseInt(Math.random() * boardHeight);
@@ -118,7 +138,11 @@ function random() {
     }
 }
 
-// 初始化二维数组值
+/**
+ * [initArray 初始化二维数组值]
+ * @param  {[type]} num [初始值]
+ * @return {[array]}     [二维数组]
+ */
 function initArray(num) {
     var arr = [];
     for (var i = 0; i < boardWidth; i++) {
@@ -129,7 +153,12 @@ function initArray(num) {
     }
     return arr;
 }
-// 创建地图数组
+/**
+ * [createMapArray 创建地图数组]
+ * @param  {[type]} x [初始横坐标]
+ * @param  {[type]} y [初始纵坐标]
+ * @return {[array]}   [坐标有雷值为1，无雷值为0，初始坐标和周围点无雷]
+ */
 function createMapArray(x, y) {
     var arr = [];
     for (var i = 0; i < boardWidth; i++) {
@@ -138,7 +167,7 @@ function createMapArray(x, y) {
             arr[i][j] = 0
         }
     }
-    for (var i = 0; i < leiNum;) {
+    for (var i = 0; i < mineNum;) {
         var location = random();
         if (((x < location.x - 1 || x > location.x + 1) || (y < location.y - 1 || y > location.y + 1)) && arr[location.x][location.y] == 0) {
             arr[location.x][location.y] = 1;
@@ -148,24 +177,32 @@ function createMapArray(x, y) {
     return arr;
 }
 
-// 根据地图计算坐标值是什么
-// 如(x,y)=5代表该坐标附近有5个雷，(x,y)='lei'代表该位置为雷
+/**
+ * [getMapValue 根据地图计算坐标值是什么，
+ * 如(x,y)=5代表该坐标附近有5个雷，(x,y)='mine'代表该位置为雷]
+ * @return {[array]} [地图显示数组]
+ */
 function getMapValue() {
     var arr = []
     for (var i = 0; i < boardWidth; i++) {
         arr[i] = [];
         for (var j = 0; j < boardHeight; j++) {
             if (map[i][j] == 0) {
-                arr[i][j] = getLeiNum(i, j);
+                arr[i][j] = getMineNum(i, j);
             } else {
-                arr[i][j] = 'lei'
+                arr[i][j] = 'mine'
             }
         }
     }
     return arr;
 }
-// 获取坐标点有几个雷
-function getLeiNum(x, y) {
+/**
+ * [getMineNum 获取坐标点有几个雷]
+ * @param  {[type]} x [横坐标]
+ * @param  {[type]} y [纵坐标]
+ * @return {[int]}   [值为0-8]
+ */
+function getMineNum(x, y) {
     var num = 0;
     var aroundPoints = getAroundPointLocations(x, y);
     for (var i = 0; i < aroundPoints.length; i++) {
@@ -176,12 +213,22 @@ function getLeiNum(x, y) {
     return num;
 }
 
-//鉴定这个是不是落在边界内部，出界返回0
+/**
+ * [boundary 鉴定这个点是不是在board内部]
+ * @param  {[type]} x [横坐标]
+ * @param  {[type]} y [纵坐标]
+ * @return {[num]}   [0：不在内部；1：在内部]
+ */
 function boundary(x, y) {
     if (x > -1 && x < boardWidth && y > -1 && y < boardHeight) return 1;
     else return 0;
 }
-// 获取周围坐标数组
+/**
+ * [getAroundPointLocations 获取周围坐标数组]
+ * @param  {[type]} x [横坐标]
+ * @param  {[type]} y [纵坐标]
+ * @return {[array]}   [周围点的坐标数组]
+ */
 function getAroundPointLocations(x, y) {
     var arr = []
     for (var i = -1; i <= 1; i++) {
@@ -196,7 +243,14 @@ function getAroundPointLocations(x, y) {
     }
     return arr;
 }
-//判断两个格点是否相邻，对角返回2，相邻返回1，否则为0
+/**
+ * [isNeighbour 判断两个格点是否相邻]
+ * @param  {[type]}  x  [p1横坐标]
+ * @param  {[type]}  y  [p1纵坐标]
+ * @param  {[type]}  x1 [p2横坐标]
+ * @param  {[type]}  y1 [p2纵坐标]
+ * @return {int}    [对角返回2，相邻返回1，否则为0]
+ */
 function isNeighbour(x, y, x1, y1) {
     var distance;
     distance = (x1 - x) * (x1 - x) + (y1 - y) * (y1 - y);
@@ -204,7 +258,11 @@ function isNeighbour(x, y, x1, y1) {
     if (distance == 1) return 1;
     else return 0;
 }
-// 画出地图效果
+/**
+ * [drawShowMapArray 根据数组画出显示效果]
+ * @param  {[type]} arr [二维数组]
+ * @return {[type]}     [description]
+ */
 function drawShowMapArray(arr) {
     for (var i = 0; i < arr.length; i++) {
         for (var j = 0; j < arr[i].length; j++) {
@@ -212,7 +270,11 @@ function drawShowMapArray(arr) {
         }
     }
 }
-// 开采地图
+/**
+ * [setExploreMap 展开地图]
+ * @param {[type]} x [横坐标]
+ * @param {[type]} y [纵坐标]
+ */
 function setExploreMap(x, y) {
     if (showMapArray[x][y] > 0) {
         exploreMap[x][y] = showMapArray[x][y];
@@ -228,7 +290,7 @@ function setExploreMap(x, y) {
 }
 var isClick = false
 var isFirstClick = true;
-saoleiBoard.addEventListener('click', function(e) {
+cleanMineBoard.addEventListener('click', function(e) {
     // if (isClick) return;
     // isClick = true;
     var x = Math.floor(e.offsetX / squareWidth - 0.5),
@@ -244,7 +306,12 @@ saoleiBoard.addEventListener('click', function(e) {
 
 drawChessBoard(boardWidth, boardHeight);
 
-//当这一块被开采或被标记后，其周围的图块自减1
+/**
+ * [modUnknown 当该点被开采或被标记后，其周围的图块自减1]
+ * @param  {[type]} x [横坐标]
+ * @param  {[type]} y [纵坐标]
+ * @return {[type]}   [description]
+ */
 function modUnknown(x, y) {
     var locations = getAroundPointLocations(x, y);
     for(var i=0;i<locations.length;i++){
