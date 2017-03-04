@@ -1,8 +1,8 @@
 var cleanMineBoard = document.getElementById('cleanMine-board');
 
 // 定义宽高格子个数
-var boardWidth = 24,
-    boardHeight = 20;
+var boardWidth = 30,
+    boardHeight = 16;
 // 定义格子边长
 var squareWidth = 30;
 // 定义雷的个数
@@ -17,20 +17,25 @@ var numCorlor = {
     "6": '#0b7271',
     "7": '#000',
     "8": '#999',
-    "10": './img/flag.jpg',
-    "9": './img/mine.jpg'
+    "100": './img/flag.jpg',
+    "99": './img/mine.jpg'
 }
 
 // 定义地图数组（二维）坐标值为0为安全区域，坐标值为1为雷
 var map = [];
-// 定义显示地图
+// 定义显示地图,(x,y)周围雷数
 var showMapArray = [];
-// 当前开采地图,9为未开采,玩家能看到的画面,10为以标记地雷
-var exploreMap = initArray(9);
+// 当前开采地图,99为未开采,玩家能看到的画面,100为以标记地雷
+var exploreMap = initArray(99);
+// 坐标(x,y)已开采个数
+var hasExploreNum = initArray(0);
+// 坐标周围已设旗子个数
+var hasSetFlagNum = initArray(0);
+
 // 总共的未开采地图坐标点数数量
-var totalUnknowPointsNum = boardWidth * boardHeight;
+var totalUnknowPointsNum = boardWidth * boardHeight-mineNum;
 // 触雷判定
-var isTouchMine;
+var isTouchMine = 0;
 // 未知地雷
 var unknownMinesNum = mineNum;
 //计算两个板块的共同部分，注意：这里编号代表相邻程度。从0到23，分别从左到右，从上到下。
@@ -40,24 +45,13 @@ var common = function() {
     var p, q;
     var common = [];
     for (var i = 0; i < boardWidth; i++) {
-        common[i] = [];
+        common[i]=[]
         for (var j = 0; j < boardHeight; j++) {
-            common[i][j] = [];
+            common[i][j]=[]
             for (var i1 = 0; i1 < 5; i1++) {
-                common[i][j][i1] = [];
+                common[i][j][i1]=[]
                 for (var j1 = 0; j1 < 5; j1++) {
-                    common[i][j][i1][j1] = [];
-                    for (var a = 0; a < 4; a++) {
-                        common[i][j][i1][j1][a] = 0
-                    }
-                }
-            }
-        }
-    }
-    for (var i = 0; i < boardWidth; i++) {
-        for (var j = 0; j < boardHeight; j++) {
-            for (var i1 = 0; i1 < 5; i1++) {
-                for (var j1 = 0; j1 < 5; j1++) {
+                    common[i][j][i1][j1]=[]
                     if (boundary(i + i1 - 2, j + j1 - 2) == 0) continue; //如果要比较的格点出界，直接跳过
                     k = 0;
                     for (p = i - 1; p <= i + 1; p++) {
@@ -65,7 +59,7 @@ var common = function() {
                             if (boundary(p, q) == 0) continue; //如果周边的格点有出界的，直接跳过
                             if (p == i && q == j) continue; //中心的格点自然跳过
                             if (isNeighbour(p, q, i + i1 - 2, j + j1 - 2) != 0) {
-                                common[i][j][i1][j1][k] = p * boardHeight + q + 1;
+                                common[i][j][i1][j1][k] = {x:p,y:q};
                                 k++;
                             }
                         }
@@ -78,8 +72,8 @@ var common = function() {
 }();
 //周围的地雷不知道的个数,未知地图
 var unknownMinesArray = initArray(8);
-// 怀疑有雷数组
-var suspectMinesArray = initArray(0);
+//密度操作
+var densityArray = initArray(0);
 
 var context = cleanMineBoard.getContext('2d');
 
@@ -275,40 +269,81 @@ function isNeighbour(x, y, x1, y1) {
     if (distance == 1) return 1;
     else return 0;
 }
-/**
- * [drawShowMapArray 根据数组画出显示效果]
- * @param  {[type]} arr [二维数组]
- * @return {[type]}     [description]
- */
-function drawShowMapArray(arr) {
-    for (var i = 0; i < arr.length; i++) {
-        for (var j = 0; j < arr[i].length; j++) {
-            drawFlag(arr[i][j], i, j)
-        }
-    }
-}
+
 /**
  * [setExploreMap 展开地图,开采]
  * @param {[type]} x [横坐标]
  * @param {[type]} y [纵坐标]
  */
 function setExploreMap(x, y) {
-    if (showMapArray[x][y] > 0) {
+    totalUnknowPointsNum--;
+    if (map[x][y] == 1) { //触雷
+        isTouchMine = 1;
+        console.log(x,y);
+        return;
+    }
+    if (showMapArray[x][y] > 0 && showMapArray[x][y] < 9) {
         exploreMap[x][y] = showMapArray[x][y];
+        drawFlag(exploreMap[x][y], x, y);
+        setHasExploreNum(x, y);
     } else if (showMapArray[x][y] == 0) {
         exploreMap[x][y] = showMapArray[x][y];
+        drawFlag(exploreMap[x][y], x, y);
+        setHasExploreNum(x, y);
         var thisAroundPoints = getAroundPointLocations(x, y);
         for (var i = 0; i < thisAroundPoints.length; i++) {
-            if (exploreMap[thisAroundPoints[i].x][thisAroundPoints[i].y] == -1) {
-                setExploreMap(thisAroundPoints[i].x, thisAroundPoints[i].y);
+            var px = thisAroundPoints[i].x,
+                py = thisAroundPoints[i].y;
+            if (exploreMap[px][py] == 99) {
+                setExploreMap(px, py);
+                drawFlag(exploreMap[px][py], px, py)
             }
         }
     }
 }
-var isClick = false
+/**
+ * [setHasExploreNum 坐标周围已知值+1]
+ * @param {[type]} x [description]
+ * @param {[type]} y [description]
+ */
+function setHasExploreNum(x, y) {
+    var arr = getAroundPointLocations(x, y);
+    for (var i = 0; i < arr.length; i++) {
+        var px = arr[i].x,
+            py = arr[i].y;
+        if (hasExploreNum[px][py] < arr.length);
+        hasExploreNum[px][py]++;
+    }
+}
+/**
+ * [setHasFlagNum 坐标周围已标记+1]
+ * @param {[type]} x [description]
+ * @param {[type]} y [description]
+ */
+function setHasFlagNum(x, y) {
+    var arr = getAroundPointLocations(x, y);
+    for (var i = 0; i < arr.length; i++) {
+        var px = arr[i].x,
+            py = arr[i].y;
+        if (hasSetFlagNum[px][py] < arr.length);
+        hasSetFlagNum[px][py]++;
+    }
+}
+/**
+ * [mark 标旗]
+ * @param  {[type]} x [description]
+ * @param  {[type]} y [description]
+ * @return {[type]}   [description]
+ */
+function mark(x, y) {
+    exploreMap[x][y] = 100;
+    unknownMinesNum--;
+    drawFlag(100, x, y);
+    setHasExploreNum(x, y);
+    setHasFlagNum(x, y);
+}
 var isFirstClick = true;
 cleanMineBoard.addEventListener('click', function(e) {
-    // if (isClick) return;
     // isClick = true;
     var x = Math.floor(e.offsetX / squareWidth - 0.5),
         y = Math.floor(e.offsetY / squareWidth - 0.5);
@@ -316,107 +351,135 @@ cleanMineBoard.addEventListener('click', function(e) {
         map = createMapArray(x, y);
         showMapArray = getMapValue();
         isFirstClick = false;
+        setExploreMap(x, y);
+    } else if(isTouchMine==0){
+        autoNext();
     }
-    setExploreMap(x, y);
-    drawShowMapArray(exploreMap);
+
+    // drawShowMapArray(exploreMap);
 })
 
 drawBoard(boardWidth, boardHeight);
 
 /**
- * [modUnknown 当该点被开采或被标记后，其周围的图块自减1]
- * @param  {[type]} x [横坐标]
- * @param  {[type]} y [纵坐标]
+ * [autoNext 自动操作]
+ * @return {[type]} [description]
+ */
+function autoNext() {
+    for (var i = 0; i < boardWidth; i++) {
+        for (var j = 0; j < boardHeight; j++) {
+            if (exploreMap[i][j] == 0) continue;
+            var arr = getAroundPointLocations(i, j);
+            var len = arr.length;
+            var px, py;
+            if (hasExploreNum[i][j] >= len) continue;
+            if (exploreMap[i][j] + hasExploreNum[i][j] - hasSetFlagNum[i][j] == len) {
+                for (var i1 = 0; i1 < len; i1++) {
+                    px = arr[i1].x, py = arr[i1].y;
+                    if (exploreMap[px][py] == 99) {
+                        mark(px, py);
+                    }
+                }
+            }
+            if (hasSetFlagNum[i][j] == exploreMap[i][j]) {
+                for (var i1 = 0; i1 < len; i1++) {
+                    px = arr[i1].x, py = arr[i1].y;
+                    if (exploreMap[px][py] == 99) {
+                        setExploreMap(px, py);
+                    }
+                }
+            }
+            for (var i1 = i; i1 < i + 3; i1++) {
+                for (var j1 = j - 2; j1 < j + 3; j1++) {
+                    if (boundary(i1, j1) != 0) {
+                        if (exploreMap[i1][j1] > 7 || exploreMap[i1][j1] == 0) continue;
+                        logic(i, j, i1, j1);
+                    }
+                }
+            }
+        }
+    }
+}
+/**
+ * [getArroundUnknow 获取坐标周围未知数量]
+ * @param  {[type]} x [description]
+ * @param  {[type]} y [description]
  * @return {[type]}   [description]
  */
-function modUnknown(x, y) {
-    var locations = getAroundPointLocations(x, y);
-    for (var i = 0; i < locations.length; i++) {
-        unknownMinesArray[locations[i].x][locations[i].y]--;
-    }
-}
-
-//逻辑操作，本作品中的精华部分
-function logic(x, y, x1, y1) {
-    var commonUnknown, leftUnknown, rightUnknown;
-    var commonMine, leftMine, rightMine;
-    var commonGuess; //共同区域猜测的地雷数目
-    var k, l, p, q, num;
-    // click++;
-    // logictimes++;
-    commonUnknown = 0;
-    commonMine = 0;
-    k = 0;
-    l = 0;
-    num = (x - x1) * 5 + (y - y1);
-    for (k = 0; k < 4; k++) {
-        l = common[x][y][x1 - x + 2][y1 - y + 2][k];
-        if (l == 0) continue;
-        p = (l - 1) / boardHeight;
-        q = (l - 1) % boardHeight;
-        if (exploreMap[p][q] == 10) commoMine++;
-        if (exploreMap[p][q] == 9) commonUnknown++;
-    }
-    //我们定义，x,y为左边，x1,y1为右边U
-    leftUnknown = unknownMinesArray[x][y] - commonUnknown;
-    rightUnknown = unknownMinesArray[x1][y1] - commonUnknown;
-    leftMine = suspectMinesArray[x][y] - commonMine;
-    rightMine = suspectMinesArray[x1][y1] - commonMine;
-    if (leftUnknown + rightUnknown == 0) return;
-    //左边或右边所有的地方都不是雷
-    if (exploreMap[x1][y1] - rightMine == exploreMap[x][y] - leftMine) {
-        if (leftUnknown == 0) handle(x1, y1, x, y, 1);
-        if (rightUnknown == 0) handle(x, y, x1, y1, 1);
-    }
-    //左边或右边所有的地方都是雷
-    if (exploreMap[x1][y1] - rightMine - rightUnknown == exploreMap[x][y] - leftMine - leftUnknown) {
-        if (leftUnknown == 0) handle(x1, y1, x, y, 2);
-        if (rightUnknown == 0) handle(x, y, x1, y1, 2);
-    }
-    // 判断左边全是雷，右边都不是
-    if (exploreMap[x][y] - exploreMap[x1][y1] == leftMine + leftUnknown) {
-        handle(x1, y1, x, y, 1);
-        handle(x, y, x1, y1, 2);
-    }
-    //右边全是雷，左边都不是     
-    if (exploreMap[x1][y1] - exploreMap[x][y] == rightMine + rightUnknown) {
-        handle(x1, y1, x, y, 2);
-        handle(x, y, x1, y1, 1);
-    }
-}
-
-//对特定区域进行处理，前两个数字为要处理的单区域，1代表全部打开，2代表全部标记
-function handle(x, y, x1, y1, flag) {
-    //  printf("下面执行%d处理\n",flag);
-    var p, q, k = 0;
-    for (p = x - 1; p < x + 2; p++) {
-        for (q = y - 1; q < y + 2; q++) {
-            if (p == x && q == y) continue;
-            if (isNeighbour(p, q, i1, y1) != 0 || boundary(p, q) == 0) continue;
-            if (flag == 1) setExploreMap(p, q, 1);
-            if (flag == 2 && exploreMap[p][q] == 9) markMins(p, q);
-
+function getArroundUnknow(x, y) {
+    var arr = getAroundPointLocations(x, y);
+    var num = 0;
+    for (var i = 0; i < arr.length; i++) {
+        var px = arr[i].x,
+            py = arr[i].y
+        if (exploreMap[px][py] == 99) {
+            num++;
         }
     }
-
-}
-//把第i行第j列标记成地雷
-function markMines(x, y) {
-    exploreMap[x][y] = 10;
-    modSuspect(x, y);
-    modUnknown(x, y);
-    unknownMinesNum--;
-    totalUnknowPointsNum--;
+    return num;
 }
 
-function modSuspect(x, y) {
-    // printf("modsuspect%d %d\n",i,j);
-    var points = getAroundPointLocations(x, y);
-    for(var i=0;i<points.length;i++){
-        var px = points[i].x,py = points[i].y;
-        suspectMinesArray[px][py] = getMineNum(px, py);
-        if(suspectMinesArray[px][py]==exploreMap[px][py]){
-            setExploreMap(px, py);
+function logic(x,y,x1,y1){
+    var commonMine=0,
+        commonUnknown = 0,
+        pUnknown = 0,
+        qUnknown = 0,
+        pMine = 0,
+        qMine = 0,
+        commonLocations = common[x][y][x1-x+2][y1-y+2];
+    for(var i=0;i<commonLocations.length;i++){
+        var px = commonLocations[i].x,
+            py = commonLocations[i].y;
+        if(exploreMap[px][py]==100){
+            commonMine++;
+        }
+        if(exploreMap[px][py]==99){
+            commonUnknown++
+        }
+    }
+    pUnknown = getArroundUnknow(x, y) - commonUnknown;
+    qUnknown = getArroundUnknow(x1,y1) - commonUnknown;
+    pMine = hasSetFlagNum[x][y] - commonMine;
+    qMine = hasSetFlagNum[x1][y1] - commonMine;
+    if(pUnknown+qUnknown==0) return;
+    if(exploreMap[x][y]-pMine==exploreMap[x1][y1]-qMine){
+        if(pUnknown==0){
+            handle(x1,y1,x,y,1)
+        }
+        if(qUnknown==0){
+            handle(x,y,x1,y1,1)
+        }
+    }
+    if(exploreMap[x][y]-pUnknown-pMine==exploreMap[x1][y1]-qUnknown-qMine){
+        if(pUnknown==0){
+            handle(x1,y1,x,y,2)
+        }
+        if(qUnknown==0){
+            handle(x,y,x1,y1,2)
+        }
+    }
+    if(exploreMap[x][y]-exploreMap[x1][y1]==pUnknown+pMine){
+        handle(x1,y1,x,y,1)
+        handle(x,y,x1,y1,2)
+    }
+    if(exploreMap[x1][y1]-exploreMap[x][y]==qUnknown+qMine){
+        handle(x1,y1,x,y,2)
+        handle(x,y,x1,y1,1)
+    }
+}
+
+function handle(x,y,x1,y1,flag){
+    var arr = getAroundPointLocations(x,y);
+    for(var i=0;i<arr.length;i++){
+        var px = arr[i].x,py = arr[i].y;
+        if(isNeighbour(px,py,x1,y1)==0&&exploreMap[px][py]==99){
+            if(flag==1){
+                setExploreMap(px,py)
+            }
+            if(flag==2){
+                mark(px,py);
+            }
         }
     }
 }
+
