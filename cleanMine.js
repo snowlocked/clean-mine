@@ -441,6 +441,8 @@ function logic(x,y,x1,y1){
     qUnknown = getArroundUnknow(x1,y1) - commonUnknown;
     pMine = hasSetFlagNum[x][y] - commonMine;
     qMine = hasSetFlagNum[x1][y1] - commonMine;
+    var pArroundMines = exploreMap[x][y]-hasSetFlagNum[x][y];
+    var qArroundMines = exploreMap[x1][y1]-hasSetFlagNum[x1][y1];
     if(pUnknown+qUnknown==0) return;
     if(exploreMap[x][y]-pMine==exploreMap[x1][y1]-qMine){
         if(pUnknown==0){
@@ -458,11 +460,11 @@ function logic(x,y,x1,y1){
             handle(x,y,x1,y1,2)
         }
     }
-    if(exploreMap[x][y]-exploreMap[x1][y1]==pUnknown+pMine){
+    if(pArroundMines-qArroundMines==pUnknown){
         handle(x1,y1,x,y,1)
         handle(x,y,x1,y1,2)
     }
-    if(exploreMap[x1][y1]-exploreMap[x][y]==qUnknown+qMine){
+    if(qArroundMines-pArroundMines==qUnknown){
         handle(x1,y1,x,y,2)
         handle(x,y,x1,y1,1)
     }
