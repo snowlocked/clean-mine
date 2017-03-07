@@ -33,7 +33,7 @@ var hasExploreNum = initArray(0);
 var hasSetFlagNum = initArray(0);
 
 // 总共的未开采地图坐标点数数量
-var totalUnknowPointsNum = boardWidth * boardHeight-mineNum;
+var totalUnknowPointsNum = boardWidth * boardHeight;
 // 触雷判定
 var isTouchMine = 0;
 // 未知地雷
@@ -45,13 +45,13 @@ var common = function() {
     var p, q;
     var common = [];
     for (var i = 0; i < boardWidth; i++) {
-        common[i]=[]
+        common[i] = []
         for (var j = 0; j < boardHeight; j++) {
-            common[i][j]=[]
+            common[i][j] = []
             for (var i1 = 0; i1 < 5; i1++) {
-                common[i][j][i1]=[]
+                common[i][j][i1] = []
                 for (var j1 = 0; j1 < 5; j1++) {
-                    common[i][j][i1][j1]=[]
+                    common[i][j][i1][j1] = []
                     if (boundary(i + i1 - 2, j + j1 - 2) == 0) continue; //如果要比较的格点出界，直接跳过
                     k = 0;
                     for (p = i - 1; p <= i + 1; p++) {
@@ -59,7 +59,7 @@ var common = function() {
                             if (boundary(p, q) == 0) continue; //如果周边的格点有出界的，直接跳过
                             if (p == i && q == j) continue; //中心的格点自然跳过
                             if (isNeighbour(p, q, i + i1 - 2, j + j1 - 2) != 0) {
-                                common[i][j][i1][j1][k] = {x:p,y:q};
+                                common[i][j][i1][j1][k] = { x: p, y: q };
                                 k++;
                             }
                         }
@@ -279,7 +279,7 @@ function setExploreMap(x, y) {
     totalUnknowPointsNum--;
     if (map[x][y] == 1) { //触雷
         isTouchMine = 1;
-        console.log(x,y);
+        console.log(x, y);
         return;
     }
     if (showMapArray[x][y] > 0 && showMapArray[x][y] < 9) {
@@ -338,6 +338,7 @@ function setHasFlagNum(x, y) {
 function mark(x, y) {
     exploreMap[x][y] = 100;
     unknownMinesNum--;
+    totalUnknowPointsNum--;
     drawFlag(100, x, y);
     setHasExploreNum(x, y);
     setHasFlagNum(x, y);
@@ -352,7 +353,7 @@ cleanMineBoard.addEventListener('click', function(e) {
         showMapArray = getMapValue();
         isFirstClick = false;
         setExploreMap(x, y);
-    } else if(isTouchMine==0){
+    } else if (isTouchMine == 0) {
         autoNext();
     }
 
@@ -366,6 +367,7 @@ drawBoard(boardWidth, boardHeight);
  * @return {[type]} [description]
  */
 function autoNext() {
+    var count = 0;
     for (var i = 0; i < boardWidth; i++) {
         for (var j = 0; j < boardHeight; j++) {
             if (exploreMap[i][j] == 0) continue;
@@ -378,6 +380,7 @@ function autoNext() {
                     px = arr[i1].x, py = arr[i1].y;
                     if (exploreMap[px][py] == 99) {
                         mark(px, py);
+                        count++;
                     }
                 }
             }
@@ -386,6 +389,7 @@ function autoNext() {
                     px = arr[i1].x, py = arr[i1].y;
                     if (exploreMap[px][py] == 99) {
                         setExploreMap(px, py);
+                        count++;
                     }
                 }
             }
@@ -393,12 +397,59 @@ function autoNext() {
                 for (var j1 = j - 2; j1 < j + 3; j1++) {
                     if (boundary(i1, j1) != 0) {
                         if (exploreMap[i1][j1] > 7 || exploreMap[i1][j1] == 0) continue;
-                        logic(i, j, i1, j1);
+                        var getLogic = logic(i, j, i1, j1) || 0;
+                        count += getLogic;
                     }
                 }
             }
         }
     }
+    // console.log(count);
+    if (count == 0) {
+        var restPoints = getUnknownPoints();
+        if (unknownMinesNum == 0) {
+            for (var i = 0; i < restPoints.length; i++) {
+                setExploreMap(restPoints[i].x, restPoints[i].y);
+            }
+        } else if (unknownMinesNum == totalUnknowPointsNum) {
+            for (var i = 0; i < restPoints.length; i++) {
+                mark(restPoints[i].x, restPoints[i].y);
+            }
+        } else {
+            var density = unknownMinesNum / totalUnknowPointsNum;
+            var guessMine = initArray(0);
+            for (var i = 0; i < restPoints.length; i++) {
+                var px = restPoints[i].x,
+                    py = restPoints[i].y;
+                var pArround = getAroundPointLocations(px, py);
+                for (var j = 0; j < pArround.length; j++) {
+                    if (exploreMap[pArround[j].x][pArround[j].y] < 9) {
+                        var pArroundUnknown = getArroundUnknow(pArround[j].x, pArround[j].y);
+                        var pRestMine = exploreMap[pArround[j].x][pArround[j].y] - hasSetFlagNum[pArround[j].x][pArround[j].y];
+                        var thisPointDensity = pRestMine / pArroundUnknown;
+                        if (thisPointDensity > guessMine[px][py]) {
+                            guessMine[px][py] = thisPointDensity;
+                        }
+                    }
+
+                }
+            }
+            for(var i=0;i<restPoints.length;i++){
+                var px = restPoints[i].x,
+                    py = restPoints[i].y;
+                var pArround = getAroundPointLocations(px, py);
+                var max = 0;
+                for(var j=0;j<pArround.length;j++){
+                    
+                }
+            }
+            console.log(guessMine);
+            console.log(density);
+            console.log("未知雷：" + unknownMinesNum);
+            console.log("未知区域：" + totalUnknowPointsNum);
+        }
+    }
+    // console.log("未知雷："+);
 }
 /**
  * [getArroundUnknow 获取坐标周围未知数量]
@@ -419,67 +470,94 @@ function getArroundUnknow(x, y) {
     return num;
 }
 
-function logic(x,y,x1,y1){
-    var commonMine=0,
+function logic(x, y, x1, y1) {
+    var commonMine = 0,
         commonUnknown = 0,
         pUnknown = 0,
         qUnknown = 0,
         pMine = 0,
         qMine = 0,
-        commonLocations = common[x][y][x1-x+2][y1-y+2];
-    for(var i=0;i<commonLocations.length;i++){
+        pRestMine = 0,
+        qRestMine = 0,
+        commonLocations = common[x][y][x1 - x + 2][y1 - y + 2],
+        count = 0;
+    for (var i = 0; i < commonLocations.length; i++) {
         var px = commonLocations[i].x,
             py = commonLocations[i].y;
-        if(exploreMap[px][py]==100){
+        if (exploreMap[px][py] == 100) {
             commonMine++;
         }
-        if(exploreMap[px][py]==99){
+        if (exploreMap[px][py] == 99) {
             commonUnknown++
         }
     }
     pUnknown = getArroundUnknow(x, y) - commonUnknown;
-    qUnknown = getArroundUnknow(x1,y1) - commonUnknown;
+    qUnknown = getArroundUnknow(x1, y1) - commonUnknown;
     pMine = hasSetFlagNum[x][y] - commonMine;
     qMine = hasSetFlagNum[x1][y1] - commonMine;
-    if(pUnknown+qUnknown==0) return;
-    if(exploreMap[x][y]-pMine==exploreMap[x1][y1]-qMine){
-        if(pUnknown==0){
-            handle(x1,y1,x,y,1)
+    pRestMine = exploreMap[x][y] - hasSetFlagNum[x][y];
+    qRestMine = exploreMap[x1][y1] - hasSetFlagNum[x1][y1];
+    if (pUnknown + qUnknown == 0) return;
+    if (exploreMap[x][y] - pMine == exploreMap[x1][y1] - qMine) {
+        if (pUnknown == 0) {
+            handle(x1, y1, x, y, 1);
+            count++;
         }
-        if(qUnknown==0){
-            handle(x,y,x1,y1,1)
-        }
-    }
-    if(exploreMap[x][y]-pUnknown-pMine==exploreMap[x1][y1]-qUnknown-qMine){
-        if(pUnknown==0){
-            handle(x1,y1,x,y,2)
-        }
-        if(qUnknown==0){
-            handle(x,y,x1,y1,2)
+        if (qUnknown == 0) {
+            handle(x, y, x1, y1, 1);
+            count++;
         }
     }
-    if(exploreMap[x][y]-exploreMap[x1][y1]==pUnknown+pMine){
-        handle(x1,y1,x,y,1)
-        handle(x,y,x1,y1,2)
+    if (exploreMap[x][y] - pUnknown - pMine == exploreMap[x1][y1] - qUnknown - qMine) {
+        if (pUnknown == 0) {
+            handle(x1, y1, x, y, 2);
+            count++;
+        }
+        if (qUnknown == 0) {
+            handle(x, y, x1, y1, 2);
+            count++;
+        }
     }
-    if(exploreMap[x1][y1]-exploreMap[x][y]==qUnknown+qMine){
-        handle(x1,y1,x,y,2)
-        handle(x,y,x1,y1,1)
+    if (pRestMine - qRestMine == pUnknown) {
+        handle(x1, y1, x, y, 1);
+        handle(x, y, x1, y1, 2);
+        count++;
+    }
+    if (qRestMine - pRestMine == qUnknown) {
+        handle(x1, y1, x, y, 2);
+        handle(x, y, x1, y1, 1);
+        count++;
+    }
+    return count;
+}
+
+function handle(x, y, x1, y1, flag) {
+    var arr = getAroundPointLocations(x, y);
+    for (var i = 0; i < arr.length; i++) {
+        var px = arr[i].x,
+            py = arr[i].y;
+        if (isNeighbour(px, py, x1, y1) == 0 && exploreMap[px][py] == 99) {
+            if (flag == 1) {
+                setExploreMap(px, py)
+            }
+            if (flag == 2) {
+                mark(px, py);
+            }
+        }
     }
 }
 
-function handle(x,y,x1,y1,flag){
-    var arr = getAroundPointLocations(x,y);
-    for(var i=0;i<arr.length;i++){
-        var px = arr[i].x,py = arr[i].y;
-        if(isNeighbour(px,py,x1,y1)==0&&exploreMap[px][py]==99){
-            if(flag==1){
-                setExploreMap(px,py)
-            }
-            if(flag==2){
-                mark(px,py);
+function getUnknownPoints() {
+    var arr = [];
+    for (var i = 0; i < boardWidth; i++) {
+        for (var j = 0; j < boardHeight; j++) {
+            if (exploreMap[i][j] == 99) {
+                arr.push({
+                    x: i,
+                    y: j
+                });
             }
         }
     }
+    return arr;
 }
-
