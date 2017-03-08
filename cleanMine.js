@@ -275,13 +275,13 @@ function isNeighbour(x, y, x1, y1) {
  * @param {[type]} x [横坐标]
  * @param {[type]} y [纵坐标]
  */
-function setExploreMap(x, y) {
-    totalUnknowPointsNum--;
+function setExploreMap(x, y) {   
     if (map[x][y] == 1) { //触雷
         isTouchMine = 1;
         console.log(x, y);
         return;
     }
+    totalUnknowPointsNum--;
     if (showMapArray[x][y] > 0 && showMapArray[x][y] < 9) {
         exploreMap[x][y] = showMapArray[x][y];
         drawFlag(exploreMap[x][y], x, y);
@@ -353,6 +353,8 @@ cleanMineBoard.addEventListener('click', function(e) {
         showMapArray = getMapValue();
         isFirstClick = false;
         setExploreMap(x, y);
+    }else if(unknownMinesNum==0&&totalUnknowPointsNum==0){
+        console.log('clean mine success!');
     } else if (isTouchMine == 0) {
         autoNext();
     }
@@ -418,6 +420,8 @@ function autoNext() {
         } else {
             var density = unknownMinesNum / totalUnknowPointsNum;
             var guessMine = initArray(0);
+            console.log("未知雷：" + unknownMinesNum);
+            console.log("未知区域：" + totalUnknowPointsNum);
             for (var i = 0; i < restPoints.length; i++) {
                 var px = restPoints[i].x,
                     py = restPoints[i].y;
@@ -434,19 +438,49 @@ function autoNext() {
 
                 }
             }
-            for(var i=0;i<restPoints.length;i++){
+            var totalHasDensity = 0
+            for (var i = 0; i < restPoints.length; i++) {
                 var px = restPoints[i].x,
                     py = restPoints[i].y;
-                var pArround = getAroundPointLocations(px, py);
-                var max = 0;
-                for(var j=0;j<pArround.length;j++){
-                    
+                totalHasDensity += guessMine[px][py];
+            }
+            var hasGuess = 0;
+            var hasGuessMine = [],notHasGuessMine = [];
+            for (var i = 0; i < restPoints.length; i++) {
+                var px = restPoints[i].x,
+                    py = restPoints[i].y;
+                if (exploreMap[px][py] == 99&&totalHasDensity >= unknownMinesNum) {
+                    setExploreMap(px, py);return;
+                }
+                if(exploreMap[px][py] == 99&&unknownMinesNum-totalHasDensity >= totalUnknowPointsNum-unknownMinesNum){
+                    mark(px,py);return;
+                }
+                if(guessMine[px][py]>0){
+                    hasGuess++;
+                    hasGuessMine.push({x:px,y:py,guessPossible:guessMine[px][py]});
+                }else{
+                    notHasGuessMine.push({x:px,y:py});
                 }
             }
-            console.log(guessMine);
-            console.log(density);
-            console.log("未知雷：" + unknownMinesNum);
-            console.log("未知区域：" + totalUnknowPointsNum);
+            console.log(hasGuessMine);
+            console.log(notHasGuessMine);
+            var notHasGuessMineAvage = (unknownMinesNum-totalHasDensity)/(totalUnknowPointsNum-hasGuess);
+            if(notHasGuessMineAvage<density){
+                var _r = parseInt(Math.random()*notHasGuessMine.length);
+                console.log(notHasGuessMine[_r]);
+                setExploreMap(notHasGuessMine[_r].x,notHasGuessMine[_r].y);
+                // return;
+            }else{
+                for(var i=0;i<hasGuessMine.length;i++){
+                    if(hasGuessMine[i].guessPossible<density){
+                        setExploreMap(hasGuessMine[i].x,hasGuessMine[i].y);
+                        break;
+                    }
+                }
+            }
+            console.log('平均可能性：'+density);
+            console.log('猜测有雷可能个数：'+hasGuess);
+            console.log('有雷点可能性总和：'+totalHasDensity);
         }
     }
     // console.log("未知雷："+);
