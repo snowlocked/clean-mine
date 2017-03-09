@@ -408,29 +408,30 @@ function autoNext() {
     }
     // console.log(count);
     if (count == 0) {
-        var restPoints = getUnknownPoints();
-        if (unknownMinesNum == 0) {
+        var restPoints = getUnknownPoints();//获取未知点坐标
+        if (unknownMinesNum == 0) {//已标记所有雷
             for (var i = 0; i < restPoints.length; i++) {
                 setExploreMap(restPoints[i].x, restPoints[i].y);
             }
-        } else if (unknownMinesNum == totalUnknowPointsNum) {
+        } else if (unknownMinesNum == totalUnknowPointsNum) {//全是雷
             for (var i = 0; i < restPoints.length; i++) {
                 mark(restPoints[i].x, restPoints[i].y);
             }
         } else {
-            var density = unknownMinesNum / totalUnknowPointsNum;
-            var guessMine = initArray(0);
+            var density = unknownMinesNum / totalUnknowPointsNum;//当前雷的密度
+            var guessMine = initArray(0);//猜测数组
             console.log("未知雷：" + unknownMinesNum);
             console.log("未知区域：" + totalUnknowPointsNum);
+            console.log('平均可能性：'+density);
             for (var i = 0; i < restPoints.length; i++) {
                 var px = restPoints[i].x,
                     py = restPoints[i].y;
-                var pArround = getAroundPointLocations(px, py);
+                var pArround = getAroundPointLocations(px, py);//获取未知点周围坐标
                 for (var j = 0; j < pArround.length; j++) {
                     if (exploreMap[pArround[j].x][pArround[j].y] < 9) {
-                        var pArroundUnknown = getArroundUnknow(pArround[j].x, pArround[j].y);
-                        var pRestMine = exploreMap[pArround[j].x][pArround[j].y] - hasSetFlagNum[pArround[j].x][pArround[j].y];
-                        var thisPointDensity = pRestMine / pArroundUnknown;
+                        var pArroundUnknown = getArroundUnknow(pArround[j].x, pArround[j].y);//获取未知坐标总数
+                        var pRestMine = exploreMap[pArround[j].x][pArround[j].y] - hasSetFlagNum[pArround[j].x][pArround[j].y];//未知雷总数
+                        var thisPointDensity = pRestMine / pArroundUnknown;//有雷概率
                         if (thisPointDensity > guessMine[px][py]) {
                             guessMine[px][py] = thisPointDensity;
                         }
@@ -438,22 +439,21 @@ function autoNext() {
 
                 }
             }
-            var totalHasDensity = 0
+            var totalHasDensity = 0;//计算未知点概率和
             for (var i = 0; i < restPoints.length; i++) {
                 var px = restPoints[i].x,
                     py = restPoints[i].y;
                 totalHasDensity += guessMine[px][py];
             }
+            console.log('有雷点可能性总和：'+totalHasDensity);
             var hasGuess = 0;
             var hasGuessMine = [],notHasGuessMine = [];
             for (var i = 0; i < restPoints.length; i++) {
                 var px = restPoints[i].x,
                     py = restPoints[i].y;
-                if (exploreMap[px][py] == 99&&totalHasDensity >= unknownMinesNum) {
+                if (exploreMap[px][py] == 99&&totalHasDensity >= unknownMinesNum&&guessMine[px][py]==0) {
+                    // 总概率大于总雷数可判定未开发点概率未计算的点为安全点
                     setExploreMap(px, py);return;
-                }
-                if(exploreMap[px][py] == 99&&unknownMinesNum-totalHasDensity >= totalUnknowPointsNum-unknownMinesNum){
-                    mark(px,py);return;
                 }
                 if(guessMine[px][py]>0){
                     hasGuess++;
@@ -461,26 +461,29 @@ function autoNext() {
                 }else{
                     notHasGuessMine.push({x:px,y:py});
                 }
+                if(exploreMap[px][py] == 99&&hasGuess-totalHasDensity >= totalUnknowPointsNum-unknownMinesNum&&guessMine[px][py]==0){
+                    // 未开发点概率已计算的点-总概率大于剩余安全点可判定未开发点概率未计算的点为有雷点
+                    mark(px,py);return;
+                }
             }
+            console.log('猜测有雷可能个数：'+hasGuess);
             console.log(hasGuessMine);
             console.log(notHasGuessMine);
             var notHasGuessMineAvage = (unknownMinesNum-totalHasDensity)/(totalUnknowPointsNum-hasGuess);
-            if(notHasGuessMineAvage<density){
+            if(notHasGuessMineAvage>0&&notHasGuessMineAvage<density){
+                // 未猜测点平均概率<总平均概率
                 var _r = parseInt(Math.random()*notHasGuessMine.length);
                 console.log(notHasGuessMine[_r]);
                 setExploreMap(notHasGuessMine[_r].x,notHasGuessMine[_r].y);
                 // return;
             }else{
                 for(var i=0;i<hasGuessMine.length;i++){
-                    if(hasGuessMine[i].guessPossible<density){
+                    if(hasGuessMine[i].guessPossible<density){//猜测概率<平均概率
                         setExploreMap(hasGuessMine[i].x,hasGuessMine[i].y);
                         break;
                     }
                 }
             }
-            console.log('平均可能性：'+density);
-            console.log('猜测有雷可能个数：'+hasGuess);
-            console.log('有雷点可能性总和：'+totalHasDensity);
         }
     }
     // console.log("未知雷："+);
