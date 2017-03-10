@@ -1,35 +1,173 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-	<meta charset="UTF-8">
-	<title>自动扫雷</title>
-	<style type="text/css">
-		#cleanMine-board{
-			margin:50px auto;
-			display: block;
-			box-shadow: -2px -2px 2px #efefef,5px 5px 5px #b9b9b9;
-			background-color: #eee;
-		}
-		.setting-box{
-			width: 570px;
-			margin:0 auto;
-			text-align: center;
-		}
-		.title{
-			text-align: center;
-			font-weight: bold;
-			font-size: 30px;
-			margin-top: 50px;
-		}
-		#status{
-			text-align: center;
-			margin-bottom: 20px;
-		}
-	</style>
+    <meta charset="UTF-8">
+    <title>自动扫雷</title>
+    <style type="text/css">
+    #cleanMine-board {
+        margin: 50px auto;
+        display: block;
+        box-shadow: -2px -2px 2px #efefef, 5px 5px 5px #b9b9b9;
+        background-color: #eee;
+    }
+    
+    input {
+        padding-left: 6px;
+        width: 50px;
+        text-align: right;
+    }
+
+    input[type='radio']{
+    	width: 20px;
+    }
+    
+    .setting-box {
+        width: 570px;
+        margin: 0 auto;
+        text-align: center;
+    }
+    
+    .title {
+        text-align: center;
+        font-weight: bold;
+        font-size: 30px;
+        margin-top: 50px;
+    }
+    
+    .tc {
+        text-align: center;
+    }
+    
+    #status {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    </style>
 </head>
+
 <body>
-	<div class="title">自动扫雷</div>
-	<canvas id="cleanMine-board" width="570px" height="570px"></canvas>
-	<script type="text/javascript" src='cleanMine.js'></script>
+    <div class="title">自动扫雷</div>
+    <div class="tc">
+        <label>
+            <input type="radio" name="level" value="0">初级</label>
+        <label>
+            <input type="radio" name="level" value="1">中级</label>
+        <label>
+            <input type="radio" name="level" value="2" checked="checked">高级</label>
+        <label>
+            <input type="radio" name="level" value="3">自定义</label>
+    </div>
+    <div class="tc">
+        <label>宽度：
+            <input id="width" type="number" name="width" disabled="disabled" value="30" placeholder="9-30">
+        </label>
+        <label>高度：
+            <input id="height" type="number" name="height" disabled="disabled" value="16" placeholder="9-24">
+        </label>
+        <label>雷数：
+            <input id="num" type="number" name="mines" disabled="disabled" value="99" placeholder="10-宽*高*0.9">
+        </label>
+    </div>
+    <div class="tc">
+        逐步演示：
+        <label>yes:
+            <input type="radio" name="is-step" value="1" checked="checked"></input>
+        </label>no:
+        <label>
+            <input type="radio" name="is-step" value="0"></input>
+        </label>
+    </div>
+    <canvas id="cleanMine-board" width="570px" height="570px"></canvas>
+    <!-- <script type="text/javascript" src='cleanMine.js'></script> -->
+    <script type="text/javascript" src='cleanMine.class.js'></script>
+    <script type="text/javascript">
+    var cleanMineBoard = document.getElementById('cleanMine-board'),
+        levelInput = document.getElementsByName('level'),
+        widthInput = document.getElementById('width'),
+        heightInput = document.getElementById('height'),
+        numInput = document.getElementById('num');
+    var clean = new CleanMine(30, 16, 99, cleanMineBoard);
+    var levelSetting = [{
+        M: 9,
+        N: 9,
+        num: 10
+    }, {
+        M: 16,
+        N: 16,
+        num: 40
+    }, {
+        M: 30,
+        N: 16,
+        num: 99
+    }];
+    clean.init();
+    var isFirstClick = true;
+    levelInput.forEach(function(input, index) {
+        input.addEventListener('change', function() {
+            var val = input.value;
+            if (val < 3) {
+                widthInput.disabled = true;
+                height.disabled = true;
+                numInput.disabled = true;
+                clean = new CleanMine(levelSetting[val].M, levelSetting[val].N, levelSetting[val].num, cleanMineBoard);
+                clean.init();
+            } else if (val == 3) {
+                widthInput.disabled = false;
+                height.disabled = false;
+                numInput.disabled = false;
+            }
+        })
+    });
+    widthInput.addEventListener('blur', setCleanMap);
+    heightInput.addEventListener('blur', setCleanMap);
+    numInput.addEventListener('blur', setCleanMap);
+
+    function setCleanMap() {
+        var M = Number(widthInput.value),
+            N = Number(heightInput.value),
+            num = Number(numInput.value);
+        if (M < 9 || M > 30) {
+            alert('please set a leagle num');
+            setTimeout(function() {
+                widthInput.focus();
+            }, 1000)
+            return;
+        }
+        if (N < 9 || N > 24) {
+            alert('please set a leagle num');
+            setTimeout(function() {
+                heightInput.focus();
+            }, 1000)
+            return;
+        }
+        if (num < 10 || num > M * N * 0.9) {
+            alert('please set a leagle num');
+            setTimeout(function() {
+                heightInput.focus();
+            }, 1000)
+            return;
+        }
+        clean = new CleanMine(M, N, num, cleanMineBoard);
+        clean.init();
+    }
+    cleanMineBoard.addEventListener('click', function(e) {
+        // isClick = true;
+        var x = Math.floor(e.offsetX / clean.squareWidth - 0.5),
+            y = Math.floor(e.offsetY / clean.squareWidth - 0.5);
+        if (isFirstClick) {
+            clean.map = clean.createMap(x, y);
+            clean.realMap = clean.getMapValue();
+            isFirstClick = false;
+            clean.expandMap(x, y);
+        } else if (clean.unknownMinesNum == 0 && clean.unknownPointsNum == 0) {
+            console.log('clean mine success!');
+        } else if (clean.isTouchMine == 0) {
+            clean.autoNextOneStep();
+        }
+        // drawShowMapArray(exploreMap);
+    })
+    </script>
 </body>
+
 </html>
