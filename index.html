@@ -119,7 +119,7 @@
                 widthInput.value = levelSetting[val].M;
                 height.value = levelSetting[val].N;
                 numInput.value = levelSetting[val].num;
-                clean.reset(levelSetting[val].M, levelSetting[val].N, levelSetting[val].num,true);
+                clean.reset(levelSetting[val].M, levelSetting[val].N, levelSetting[val].num, true);
                 // clean.init();
             } else if (val == 3) {
                 widthInput.disabled = false;
@@ -169,7 +169,7 @@
             }, 1000)
             return;
         }
-        clean.reset(M, N, num,true);
+        clean.reset(M, N, num, true);
         // clean.init();
     }
     cleanMineBoard.addEventListener('click', function(e) {
@@ -198,6 +198,18 @@
                 clean.expandMap(x, y);
             } else {
                 clean.autoNextOneStep();
+            }
+            if (clean.isEnd) {
+            	var thisData = {
+            		isTouchMine: clean.isTouchMine,
+                    progress: clean.progress,
+                    alreadySuccess: clean.alreadySuccess,
+                    success: clean.success,
+                    condiction: clean.condiction,
+            	}
+                console.log(thisData);
+                isFirstClick = true;
+                clean.reset(Number(widthInput.value), Number(heightInput.value), Number(numInput.value), true);
             }
         } else {
             var startTime = new Date();
