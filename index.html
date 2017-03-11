@@ -17,9 +17,9 @@
         width: 50px;
         text-align: right;
     }
-
-    input[type='radio']{
-    	width: 20px;
+    
+    input[type='radio'] {
+        width: 20px;
     }
     
     .setting-box {
@@ -77,6 +77,9 @@
         <label>
             <input type="radio" name="is-step" value="0"></input>
         </label>
+        <label>设置执行次数:
+            <input id="times" type="number" name="times" disabled="disabled" value="1">
+        </label>
     </div>
     <canvas id="cleanMine-board" width="570px" height="570px"></canvas>
     <!-- <script type="text/javascript" src='cleanMine.js'></script> -->
@@ -86,7 +89,9 @@
         levelInput = document.getElementsByName('level'),
         widthInput = document.getElementById('width'),
         heightInput = document.getElementById('height'),
-        numInput = document.getElementById('num');
+        numInput = document.getElementById('num'),
+        isOneStep = document.getElementsByName('is-step'),
+        operateTimesInput = document.getElementById('times');
     var clean = new CleanMine(30, 16, 99, cleanMineBoard);
     var levelSetting = [{
         M: 9,
@@ -101,23 +106,39 @@
         N: 16,
         num: 99
     }];
-    clean.init();
+    // clean.init();
     var isFirstClick = true;
     levelInput.forEach(function(input, index) {
         input.addEventListener('change', function() {
             var val = input.value;
+            isFirstClick = true;
             if (val < 3) {
                 widthInput.disabled = true;
                 height.disabled = true;
                 numInput.disabled = true;
-                clean = new CleanMine(levelSetting[val].M, levelSetting[val].N, levelSetting[val].num, cleanMineBoard);
-                clean.init();
+                widthInput.value = levelSetting[val].M;
+                height.value = levelSetting[val].N;
+                numInput.value = levelSetting[val].num;
+                clean.reset(levelSetting[val].M, levelSetting[val].N, levelSetting[val].num,true);
+                // clean.init();
             } else if (val == 3) {
                 widthInput.disabled = false;
                 height.disabled = false;
                 numInput.disabled = false;
             }
         })
+    });
+    isOneStep.forEach(function(input, index) {
+        input.addEventListener('change', function() {
+            var val = input.value;
+            isFirstClick = true;
+            if (val == 0) {
+                operateTimesInput.disabled = false;
+            } else {
+                operateTimesInput.disabled = true;
+                operateTimesInput.value = 1;
+            }
+        });
     });
     widthInput.addEventListener('blur', setCleanMap);
     heightInput.addEventListener('blur', setCleanMap);
@@ -148,22 +169,73 @@
             }, 1000)
             return;
         }
-        clean = new CleanMine(M, N, num, cleanMineBoard);
-        clean.init();
+        clean.reset(M, N, num,true);
+        // clean.init();
     }
     cleanMineBoard.addEventListener('click', function(e) {
         // isClick = true;
         var x = Math.floor(e.offsetX / clean.squareWidth - 0.5),
             y = Math.floor(e.offsetY / clean.squareWidth - 0.5);
-        if (isFirstClick) {
-            clean.map = clean.createMap(x, y);
-            clean.realMap = clean.getMapValue();
-            isFirstClick = false;
-            clean.expandMap(x, y);
-        } else if (clean.unknownMinesNum == 0 && clean.unknownPointsNum == 0) {
-            console.log('clean mine success!');
-        } else if (clean.isTouchMine == 0) {
-            clean.autoNextOneStep();
+        var isStepByStep;
+        var operateTimes = operateTimesInput.value;
+        var dataArr = [],
+            data = {
+                touchMineTimes: 0,
+                averageProgress: 0,
+                alreadySuccessTimes: 0,
+                successTimes: 0,
+                tatalCondictions: [0, 0, 0, 0]
+            };
+        for (var i = 0; i < isOneStep.length; i++) {
+            if (isOneStep[i].checked) {
+                isStepByStep = isOneStep[i].value;
+            }
+        }
+        if (isStepByStep == 1) {
+            if (isFirstClick) {
+                clean.createMap(x, y);
+                isFirstClick = false;
+                clean.expandMap(x, y);
+            } else {
+                clean.autoNextOneStep();
+            }
+        } else {
+            var startTime = new Date();
+            for (var i = 0; i < operateTimes; i++) {
+                if (i < operateTimes - 1) {
+                    clean.reset(Number(widthInput.value), Number(heightInput.value), Number(numInput.value), false);
+                } else {
+                    clean.reset(Number(widthInput.value), Number(heightInput.value), Number(numInput.value), true);
+                }
+                clean.createMap(x, y);
+                clean.expandMap(x, y);
+                while (!clean.isEnd) {
+                    clean.autoNextOneStep();
+                }
+                dataArr.push({
+                    isTouchMine: clean.isTouchMine,
+                    progress: clean.progress,
+                    alreadySuccess: clean.alreadySuccess,
+                    success: clean.success,
+                    condiction: clean.condiction,
+                });
+            }
+            var endTime = new Date()
+            var progressSum = 0;
+            for (var i = 0; i < dataArr.length; i++) {
+                data.touchMineTimes += dataArr[i].isTouchMine;
+                progressSum += dataArr[i].progress;
+                data.alreadySuccessTimes += dataArr[i].alreadySuccess;
+                data.successTimes += dataArr[i].success;
+                for (var j = 0; j < 4; j++) {
+                    data.tatalCondictions[j] += dataArr[i].condiction[j];
+                }
+            }
+            data.averageProgress = progressSum / dataArr.length;
+            data.alreadySuccessRate = data.alreadySuccessTimes / dataArr.length;
+            data.successRate = data.successTimes / dataArr.length;
+            console.log(data);
+            console.log(endTime - startTime);
         }
         // drawShowMapArray(exploreMap);
     })

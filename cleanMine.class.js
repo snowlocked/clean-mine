@@ -15,6 +15,11 @@ function CleanMine(M, N, num, node) {
     this.squareWidth = 30; //格子宽度
     this.hasExpandMap = []; //坐标点周围已解决的点数
     this.hasSetFlagMap = []; //坐标点周围已放置旗子的点数
+    this.isDraw = true;
+    var mineImg = new Image(),
+        flagImg = new Image();
+    mineImg.src = './img/flag.jpg';
+    flagImg.src = './img/mine.jpg';
     this.flagColor = { //绘画颜色，图片
         "1": '#0805dc',
         "2": '#16710a',
@@ -24,10 +29,15 @@ function CleanMine(M, N, num, node) {
         "6": '#0b7271',
         "7": '#000',
         "8": '#999',
-        "100": './img/flag.jpg',
-        "99": './img/mine.jpg'
+        "100": mineImg,
+        "99": flagImg
     };
-
+    this.progress = 0;
+    this.alreadySuccess = 0;
+    this.success = 0;
+    this.isEnd = false;
+    this.condiction = [0, 0, 0, 0];
+    this.init();
 }
 
 CleanMine.prototype = {
@@ -49,23 +59,25 @@ CleanMine.prototype = {
      * @return {[type]}   [description]
      */
     _drawBoard: function() {
-        var context = this.context,
-            M = this.M,
-            N = this.N,
-            squareWidth = this.squareWidth;
-        this.node.width = (M + 1) * squareWidth;
-        this.node.height = (N + 1) * squareWidth;
-        context.strokeStyle = "#000";
-        for (var i = 0; i < M + 1; i++) {
-            context.moveTo(squareWidth * (i + 0.5), squareWidth / 2);
-            context.lineTo(squareWidth * (i + 0.5), squareWidth * (N + 0.5));
-            context.stroke();
-        }
-        // 画竖线
-        for (i = 0; i < N + 1; i++) {
-            context.moveTo(squareWidth / 2, squareWidth * (i + 0.5));
-            context.lineTo(squareWidth * (M + 0.5), squareWidth * (i + 0.5));
-            context.stroke();
+        if (this.isDraw) {
+            var context = this.context,
+                M = this.M,
+                N = this.N,
+                squareWidth = this.squareWidth;
+            this.node.width = (M + 1) * squareWidth;
+            this.node.height = (N + 1) * squareWidth;
+            context.strokeStyle = "#000";
+            for (var i = 0; i < M + 1; i++) {
+                context.moveTo(squareWidth * (i + 0.5), squareWidth / 2);
+                context.lineTo(squareWidth * (i + 0.5), squareWidth * (N + 0.5));
+                context.stroke();
+            }
+            // 画竖线
+            for (i = 0; i < N + 1; i++) {
+                context.moveTo(squareWidth / 2, squareWidth * (i + 0.5));
+                context.lineTo(squareWidth * (M + 0.5), squareWidth * (i + 0.5));
+                context.stroke();
+            }
         }
     },
     /**
@@ -76,19 +88,21 @@ CleanMine.prototype = {
      * @return {[type]}        [description]
      */
     drawFlag: function(status, x, y) {
-        var context = this.context,
-            squareWidth = this.squareWidth;
-        if (status > 0 && status < 9) {
-            context.font = squareWidth * 0.8 + 'px bold sans-serif';
-            context.fillStyle = this.flagColor[status]
-            context.fillText(status, (x + 5 / 6) * squareWidth, (y + 4 / 3) * squareWidth);
-        } else if (status == 0) {
-            context.fillStyle = "#666";
-            context.fillRect((x + 0.5) * squareWidth, (y + 0.5) * squareWidth, squareWidth, squareWidth);
-            context.fillStyle = "#999";
-            context.strokeRect((x + 0.5) * squareWidth, (y + 0.5) * squareWidth, squareWidth, squareWidth);
-        } else if (status >= 9) {
-            this._drawPic(status, x, y);
+        if (this.isDraw) {
+            var context = this.context,
+                squareWidth = this.squareWidth;
+            if (status > 0 && status < 9) {
+                context.font = squareWidth * 0.8 + 'px bold sans-serif';
+                context.fillStyle = this.flagColor[status]
+                context.fillText(status, (x + 5 / 6) * squareWidth, (y + 4 / 3) * squareWidth);
+            } else if (status == 0) {
+                context.fillStyle = "#666";
+                context.fillRect((x + 0.5) * squareWidth, (y + 0.5) * squareWidth, squareWidth, squareWidth);
+                context.fillStyle = "#999";
+                context.strokeRect((x + 0.5) * squareWidth, (y + 0.5) * squareWidth, squareWidth, squareWidth);
+            } else if (status >= 9) {
+                this._drawPic(status, x, y);
+            }
         }
     },
     /**
@@ -101,11 +115,8 @@ CleanMine.prototype = {
     _drawPic: function(status, x, y) {
         var context = this.context,
             squareWidth = this.squareWidth;
-        var img = new Image();
-        img.src = this.flagColor[status];
-        img.onload = function() {
-            context.drawImage(img, (x + 0.5) * squareWidth, (y + 0.5) * squareWidth, squareWidth, squareWidth);
-        };
+        var img = this.flagColor[status];
+        context.drawImage(img, (x + 0.5) * squareWidth, (y + 0.5) * squareWidth, squareWidth, squareWidth);
     },
     /**
      * [randomPoint 生成随机数坐标]
@@ -140,7 +151,8 @@ CleanMine.prototype = {
                 i++
             }
         }
-        return arr;
+        this.map = arr;
+        this.realMap = this.getMapValue();
     },
     /**
      * [getMapValue 根据地图计算坐标值是什么，
@@ -155,7 +167,7 @@ CleanMine.prototype = {
                 if (this.map[i][j] == 0) {
                     arr[i][j] = this.getMineNum(i, j);
                 } else {
-                    arr[i][j] = 9
+                    arr[i][j] = 99
                 }
             }
         }
@@ -230,8 +242,8 @@ CleanMine.prototype = {
     expandMap: function(x, y) {
         if (this.map[x][y] == 1) { //触雷
             this.isTouchMine = 1;
-            console.log(x, y);
             this.drawFlag(99, x, y);
+            this.endOperate();
             return;
         }
         this.unknownPointsNum--;
@@ -434,12 +446,14 @@ CleanMine.prototype = {
             for (var i = 0; i < restPoints.length; i++) {
                 this.expandMap(restPoints[i].x, restPoints[i].y);
             }
+            this.condiction[0]++;
         } else if (unknownMinesNum == totalUnknowPointsNum) { //全是雷
             for (var i = 0; i < restPoints.length; i++) {
                 this.mark(restPoints[i].x, restPoints[i].y);
             }
+            this.condiction[0]++;
         } else {
-        	// 以下操作均有可能触雷
+            // 以下操作均有可能触雷
             var density = unknownMinesNum / totalUnknowPointsNum; //当前雷的密度
             var guessMine = this._getGuessMine(restPoints); //猜测数组
             var totalHasDensity = 0; //计算未知点概率和
@@ -450,31 +464,36 @@ CleanMine.prototype = {
             }
             var data = this._classifyRestMine(restPoints, guessMine, totalHasDensity)
             if (data.isOperate) {
-            	console.log('c3,c4');
+                // console.log('c3,c4');
+                this.condiction[1]++;
                 return;
             }
             var hasGuessMine = data.hasGuessMine, //已猜坐标及概率
                 notHasGuessMine = data.notHasGuessMine; //未猜坐标
             var hasGuess = hasGuessMine.length;
             if (notHasGuessMine.length == 0) {
-                this._allPointHasGuessOperate(hasGuessMine,totalHasDensity);
-                console.log('c5,c6,c7');
+                this._allPointHasGuessOperate(hasGuessMine, totalHasDensity);
+                // console.log('c5,c6,c7');
+                this.condiction[2]++;
                 return;
             }
-            console.log('c8,c9');
+            // console.log('c8,c9');
+            this.condiction[3]++;
+            var count = 0
             var notHasGuessMineAvage = (unknownMinesNum - totalHasDensity) / notHasGuessMine.length;
             if (notHasGuessMineAvage > 0 && notHasGuessMineAvage < density) {
                 // 未猜测点平均概率<总平均概率
                 var _r = parseInt(Math.random() * notHasGuessMine.length);
-                console.log(notHasGuessMine[_r]);
+                // console.log(notHasGuessMine[_r]);
                 this.expandMap(notHasGuessMine[_r].x, notHasGuessMine[_r].y);
+                count++;
                 // return;
             } else {
                 var min = density;
                 var min_x = -1,
                     min_y = -1;
                 for (var i = 0; i < hasGuessMine.length; i++) {
-                    if (hasGuessMine[i].guessPossible < min) { //猜测概率<平均概率
+                    if (hasGuessMine[i].guessPossible <= min) { //猜测概率<平均概率
                         min = hasGuessMine[i].guessPossible;
                         min_x = hasGuessMine[i].x;
                         min_y = hasGuessMine[i].y;
@@ -483,7 +502,12 @@ CleanMine.prototype = {
                 }
                 if (min_x > -1 && min_y > -1) {
                     this.expandMap(min_x, min_y);
+                    count++;
                 }
+            }
+            if (count == 0) {
+                var _r = parseInt(Math.random() * restPoints.length);
+                this.expandMap(restPoints[_r].x, restPoints[_r].y);
             }
         }
     },
@@ -634,8 +658,8 @@ CleanMine.prototype = {
      * @param  {[type]}  totalHasDensity [description]
      * @return {[type]}                  [description]
      */
-    _allPointHasGuessOperate: function(hasGuessMine,totalHasDensity) {
-    	var unknownMinesNum = this.unknownMinesNum,
+    _allPointHasGuessOperate: function(hasGuessMine, totalHasDensity) {
+        var unknownMinesNum = this.unknownMinesNum,
             totalUnknowPointsNum = this.unknownPointsNum;
         var guessSum = this._getGuessMineSum(hasGuessMine);
         if (totalHasDensity > unknownMinesNum) {
@@ -672,6 +696,9 @@ CleanMine.prototype = {
      * @return {[type]} [description]
      */
     autoNextOneStep: function() {
+        if (this.isEnd) {
+            return;
+        }
         var count = 0;
         for (var i = 0; i < this.M; i++) {
             for (var j = 0; j < this.N; j++) {
@@ -713,6 +740,43 @@ CleanMine.prototype = {
         if (count == 0) {
             this.setGuessPoint();
         }
+        if (this.unknownPointsNum == 0) {
+            this.endOperate();
+        }
         // console.log("未知雷："+);
+    },
+    endOperate: function() {
+        this.progress = (this.totalNum - this.unknownPointsNum) / this.totalNum;
+        if (this.progress >= 0.8) {
+            this.alreadySuccess = 1;
+        }
+        if (this.progress == 1) {
+            this.success = 1;
+        }
+        this.isEnd = true;
+        // console.log('完成率：' + this.progress * 100 + '%');
+    },
+    reset: function(M, N, num, isDraw) {
+        this.M = M; //宽度
+        this.N = N; //高度
+        this.num = num; //雷数
+        this.totalNum = M * N; //总格数
+        this.unknownMinesNum = num; //未排雷数
+        this.unknownPointsNum = M * N; //未填格数
+        this.map = []; //地图，0：安全;1：雷
+        this.realMap = []; //真实地图，99：雷
+        this.currentMap = []; //当前进度
+        this.common = []; //2点公共区域
+        this.isTouchMine = 0; //触雷判定
+        this.squareWidth = 30; //格子宽度
+        this.hasExpandMap = []; //坐标点周围已解决的点数
+        this.hasSetFlagMap = []; //坐标点周围已放置旗子的点数
+        this.progress = 0;
+        this.alreadySuccess = 0;
+        this.success = 0;
+        this.isEnd = false;
+        this.condiction = [0, 0, 0, 0];
+        this.isDraw = isDraw;
+        this.init();
     }
 }
