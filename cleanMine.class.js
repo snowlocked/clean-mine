@@ -1,21 +1,6 @@
 function CleanMine(M, N, num, node) {
-    this.M = M; //宽度
-    this.N = N; //高度
-    this.num = num; //雷数
-    this.totalNum = M * N; //总格数
-    this.unknownMinesNum = num; //未排雷数
-    this.unknownPointsNum = M * N; //未填格数
-    this.map = []; //地图，0：安全;1：雷
-    this.realMap = []; //真实地图，99：雷
-    this.currentMap = []; //当前进度
-    this.common = []; //2点公共区域
-    this.isTouchMine = 0; //触雷判定
     this.node = node; //节点
     this.context = node.getContext('2d'); //canvas.context
-    this.squareWidth = 30; //格子宽度
-    this.hasExpandMap = []; //坐标点周围已解决的点数
-    this.hasSetFlagMap = []; //坐标点周围已放置旗子的点数
-    this.isDraw = true;
     var mineImg = new Image(),
         flagImg = new Image();
     mineImg.src = './img/flag.jpg';
@@ -32,12 +17,7 @@ function CleanMine(M, N, num, node) {
         "100": mineImg,
         "99": flagImg
     };
-    this.progress = 0;
-    this.alreadySuccess = 0;
-    this.success = 0;
-    this.isEnd = false;
-    this.condiction = [0, 0, 0, 0];
-    this.init();
+    this.reset(M,N,num,true);
 }
 
 CleanMine.prototype = {
@@ -144,7 +124,7 @@ CleanMine.prototype = {
                 arr[i][j] = 0
             }
         }
-        for (var i = 0; i < this.num;) {
+        for (i = 0; i < this.num;) {
             var location = this.randomPoint();
             if (((x < location.x - 1 || x > location.x + 1) || (y < location.y - 1 || y > location.y + 1)) && arr[location.x][location.y] == 0) {
                 arr[location.x][location.y] = 1;
@@ -238,12 +218,14 @@ CleanMine.prototype = {
      * [expandMap 展开地图,开采]
      * @param {[type]} x [横坐标]
      * @param {[type]} y [纵坐标]
+     * @param {[type]} condition [可选参数，0-3，记录因该条件而触雷]
      */
-    expandMap: function(x, y) {
+    expandMap: function(x, y,condiction) {
         if (this.map[x][y] == 1) { //触雷
             this.isTouchMine = 1;
             this.drawFlag(99, x, y);
-            this.endOperate();
+            if(arguments.length>2&&this.touchMineCondiction==-1) this.touchMineCondiction=condiction;
+            this.endOperate();           
             return;
         }
         this.unknownPointsNum--;
@@ -315,15 +297,17 @@ CleanMine.prototype = {
      * [mark 标旗]
      * @param  {[type]} x [description]
      * @param  {[type]} y [description]
+     * @param {[type]} condiction [可选参数，0-3，记录因该条件而猜错雷的位置导致失败]
      * @return {[type]}   [description]
      */
-    mark: function(x, y) {
+    mark: function(x, y,condiction) {
         this.currentMap[x][y] = 100;
         this.unknownMinesNum--;
         this.unknownPointsNum--;
         this.drawFlag(100, x, y);
         this.addExpandNum(x, y);
         this.addSetFlagNum(x, y);
+        if(arguments.length>2&&this.map[x][y]!=1) this.touchMineCondiction=condiction;
     },
     /**
      * [logic 2点的逻辑判断]
@@ -442,14 +426,15 @@ CleanMine.prototype = {
         var unknownMinesNum = this.unknownMinesNum,
             totalUnknowPointsNum = this.unknownPointsNum;
         var restPoints = this.getUnknownPoints(); //获取未知点坐标
+        var i,_r;
         if (unknownMinesNum == 0) { //已标记所有雷
-            for (var i = 0; i < restPoints.length; i++) {
-                this.expandMap(restPoints[i].x, restPoints[i].y);
+            for (i = 0; i < restPoints.length; i++) {
+                this.expandMap(restPoints[i].x, restPoints[i].y,0);
             }
             this.condiction[0]++;
         } else if (unknownMinesNum == totalUnknowPointsNum) { //全是雷
-            for (var i = 0; i < restPoints.length; i++) {
-                this.mark(restPoints[i].x, restPoints[i].y);
+            for (i = 0; i < restPoints.length; i++) {
+                this.mark(restPoints[i].x, restPoints[i].y,0);
             }
             this.condiction[0]++;
         } else {
@@ -457,7 +442,7 @@ CleanMine.prototype = {
             var density = unknownMinesNum / totalUnknowPointsNum; //当前雷的密度
             var guessMine = this._getGuessMine(restPoints); //猜测数组
             var totalHasDensity = 0; //计算未知点概率和
-            for (var i = 0; i < restPoints.length; i++) {
+            for (i = 0; i < restPoints.length; i++) {
                 var px = restPoints[i].x,
                     py = restPoints[i].y;
                 totalHasDensity += guessMine[px][py];
@@ -483,16 +468,16 @@ CleanMine.prototype = {
             var notHasGuessMineAvage = (unknownMinesNum - totalHasDensity) / notHasGuessMine.length;
             if (notHasGuessMineAvage > 0 && notHasGuessMineAvage < density) {
                 // 未猜测点平均概率<总平均概率
-                var _r = parseInt(Math.random() * notHasGuessMine.length);
+                _r = parseInt(Math.random() * notHasGuessMine.length);
                 // console.log(notHasGuessMine[_r]);
-                this.expandMap(notHasGuessMine[_r].x, notHasGuessMine[_r].y);
+                this.expandMap(notHasGuessMine[_r].x, notHasGuessMine[_r].y,3);
                 count++;
                 // return;
             } else {
                 var min = density;
                 var min_x = -1,
                     min_y = -1;
-                for (var i = 0; i < hasGuessMine.length; i++) {
+                for (i = 0; i < hasGuessMine.length; i++) {
                     if (hasGuessMine[i].guessPossible <= min) { //猜测概率<平均概率
                         min = hasGuessMine[i].guessPossible;
                         min_x = hasGuessMine[i].x;
@@ -501,13 +486,13 @@ CleanMine.prototype = {
                     }
                 }
                 if (min_x > -1 && min_y > -1) {
-                    this.expandMap(min_x, min_y);
+                    this.expandMap(min_x, min_y,3);
                     count++;
                 }
             }
             if (count == 0) {
-                var _r = parseInt(Math.random() * restPoints.length);
-                this.expandMap(restPoints[_r].x, restPoints[_r].y);
+                _r = parseInt(Math.random() * restPoints.length);
+                this.expandMap(restPoints[_r].x, restPoints[_r].y,3);
             }
         }
     },
@@ -608,22 +593,22 @@ CleanMine.prototype = {
         }
         if (totalHasDensity >= unknownMinesNum && guessMine[px][py] == 0) {
             // 总概率大于总雷数可判定未开发点概率未计算的点为安全点
-            for (var i = 0; i < data.notHasGuessMine.length; i++) {
+            for (i = 0; i < data.notHasGuessMine.length; i++) {
                 var px = data.notHasGuessMine[i].x,
                     py = data.notHasGuessMine[i].y;
                 if (this.currentMap[px][py] == 99) {
-                    this.expandMap(px, py);
+                    this.expandMap(px, py,1);
                     data.isOperate = true;
                 }
             }
         }
         if (unknownMinesNum - totalHasDensity >= data.notHasGuessMine.length) {
             // 总雷数-总概率大于剩余未猜测点数可判定未开发点概率未计算的点为有雷点
-            for (var i = 0; i < data.notHasGuessMine.length; i++) {
+            for (i = 0; i < data.notHasGuessMine.length; i++) {
                 var px = data.notHasGuessMine[i].x,
                     py = data.notHasGuessMine[i].y;
                 if (this.currentMap[px][py] == 99) {
-                    this.mark(px, py);
+                    this.mark(px, py,1);
                     data.isOperate = true;
                 }
             }
@@ -662,33 +647,34 @@ CleanMine.prototype = {
         var unknownMinesNum = this.unknownMinesNum,
             totalUnknowPointsNum = this.unknownPointsNum;
         var guessSum = this._getGuessMineSum(hasGuessMine);
+        var i;
         if (totalHasDensity > unknownMinesNum) {
             var max = 0;
             var max_x = -1,
                 max_y = -1;
-            for (var i = 0; i < hasGuessMine.length; i++) {
+            for (i = 0; i < hasGuessMine.length; i++) {
                 if (guessSum[hasGuessMine[i].x][hasGuessMine[i].y] > max) {
                     max = guessSum[hasGuessMine[i].x][hasGuessMine[i].y];
                     max_x = hasGuessMine[i].x;
                     max_y = hasGuessMine[i].y
                 }
             }
-            this.mark(max_x, max_y);
+            this.mark(max_x, max_y,2);
         } else if (totalHasDensity < unknownMinesNum) {
             var min = 1000;
             var max_x = -1,
                 max_y = -1;
-            for (var i = 0; i < hasGuessMine.length; i++) {
+            for (i = 0; i < hasGuessMine.length; i++) {
                 if (guessSum[hasGuessMine[i].x][hasGuessMine[i].y] < min) {
                     min = guessSum[hasGuessMine[i].x][hasGuessMine[i].y];
                     min_x = hasGuessMine[i].x;
                     min_y = hasGuessMine[i].y
                 }
             }
-            this.expandMap(min_x, min_y);
+            this.expandMap(min_x, min_y,2);
         } else {
             var _r = parseInt(Math.random() * hasGuessMine.length);
-            this.expandMap(hasGuessMine[_r].x, hasGuessMine[_r].y);
+            this.expandMap(hasGuessMine[_r].x, hasGuessMine[_r].y,2);
         }
     },
     /**
@@ -776,6 +762,7 @@ CleanMine.prototype = {
         this.success = 0;
         this.isEnd = false;
         this.condiction = [0, 0, 0, 0];
+        this.touchMineCondiction = -1;
         this.isDraw = isDraw;
         this.init();
     }
