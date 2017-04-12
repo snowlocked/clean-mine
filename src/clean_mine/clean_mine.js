@@ -1,14 +1,16 @@
-import './clean_mine.scss'
+import './clean_mine.scss';
+import CleanMine from '../../modules/cleanMine.class.js';
+
 (function() {
-    var cleanMineBoard = document.getElementById('cleanMine-board'),
+    let cleanMineBoard = document.getElementById('cleanMine-board'),
         levelInput = document.getElementsByName('level'),
         widthInput = document.getElementById('width'),
         heightInput = document.getElementById('height'),
         numInput = document.getElementById('num'),
         isOneStep = document.getElementsByName('is-step'),
         operateTimesInput = document.getElementById('times');
-    var clean = new CleanMine(30, 16, 99, cleanMineBoard);
-    var levelSetting = [{
+    let clean = new CleanMine(30, 16, 99, cleanMineBoard);
+    let levelSetting = [{
         M: 9,
         N: 9,
         num: 10
@@ -22,10 +24,10 @@ import './clean_mine.scss'
         num: 99
     }];
     // clean.init();
-    var isFirstClick = true;
+    let isFirstClick = true;
     levelInput.forEach(function(input, index) {
         input.addEventListener('change', function() {
-            var val = input.value;
+            let val = input.value;
             isFirstClick = true;
             if (val < 3) {
                 widthInput.disabled = true;
@@ -45,7 +47,7 @@ import './clean_mine.scss'
     });
     isOneStep.forEach(function(input, index) {
         input.addEventListener('change', function() {
-            var val = input.value;
+            let val = input.value;
             isFirstClick = true;
             if (val == 0) {
                 operateTimesInput.disabled = false;
@@ -60,7 +62,7 @@ import './clean_mine.scss'
     numInput.addEventListener('blur', setCleanMap);
 
     function setCleanMap() {
-        var M = Number(widthInput.value),
+        let M = Number(widthInput.value),
             N = Number(heightInput.value),
             num = Number(numInput.value);
         if (M < 9 || M > 30) {
@@ -87,88 +89,89 @@ import './clean_mine.scss'
         clean.reset(M, N, num, true);
         // clean.init();
     }
-    // cleanMineBoard.addEventListener('click', function(e) {
-    //     // isClick = true;
-    //     var x = Math.floor(e.offsetX / clean.squareWidth - 0.5),
-    //         y = Math.floor(e.offsetY / clean.squareWidth - 0.5);
-    //     var isStepByStep;
-    //     var operateTimes = operateTimesInput.value;
-    //     var dataArr = [],
-    //         data = {
-    //             touchMineTimes: 0,
-    //             averageProgress: 0,
-    //             alreadySuccessTimes: 0,
-    //             successTimes: 0,
-    //             totalCondictions: [0, 0, 0, 0],
-    //             totalTouchCondictions: [0, 0, 0, 0]
-    //         };
-    //     var i, j;
-    //     for (i = 0; i < isOneStep.length; i++) {
-    //         if (isOneStep[i].checked) {
-    //             isStepByStep = isOneStep[i].value;
-    //         }
-    //     }
-    //     if (isStepByStep == 1) {
-    //         if (isFirstClick) {
-    //             clean.createMap(x, y);
-    //             isFirstClick = false;
-    //             clean.expandMap(x, y);
-    //         } else {
-    //             clean.autoNextOneStep();
-    //         }
-    //         if (clean.isEnd) {
-    //             var thisData = {
-    //                 isTouchMine: clean.isTouchMine,
-    //                 progress: clean.progress,
-    //                 alreadySuccess: clean.alreadySuccess,
-    //                 success: clean.success,
-    //                 condiction: clean.condiction,
-    //             }
-    //             console.log(thisData);
-    //             isFirstClick = true;
-    //             clean.reset(Number(widthInput.value), Number(heightInput.value), Number(numInput.value), true);
-    //         }
-    //     } else {
-    //         var startTime = new Date();
-    //         for (i = 0; i < operateTimes; i++) {
-    //             if (i < operateTimes - 1) {
-    //                 clean.reset(Number(widthInput.value), Number(heightInput.value), Number(numInput.value), false);
-    //             } else {
-    //                 clean.reset(Number(widthInput.value), Number(heightInput.value), Number(numInput.value), true);
-    //             }
-    //             clean.createMap(x, y);
-    //             clean.expandMap(x, y);
-    //             while (!clean.isEnd) {
-    //                 clean.autoNextOneStep();
-    //             }
-    //             dataArr.push({
-    //                 isTouchMine: clean.isTouchMine,
-    //                 progress: clean.progress,
-    //                 alreadySuccess: clean.alreadySuccess,
-    //                 success: clean.success,
-    //                 condiction: clean.condiction,
-    //                 touchMineCondiction: clean.touchMineCondiction
-    //             });
-    //         }
-    //         var endTime = new Date()
-    //         var progressSum = 0;
-    //         for (i = 0; i < dataArr.length; i++) {
-    //             data.touchMineTimes += dataArr[i].isTouchMine;
-    //             progressSum += dataArr[i].progress;
-    //             data.alreadySuccessTimes += dataArr[i].alreadySuccess;
-    //             data.successTimes += dataArr[i].success;
-    //             for (j = 0; j < 4; j++) {
-    //                 data.totalCondictions[j] += dataArr[i].condiction[j];
-    //                 if (dataArr[i].touchMineCondiction == j)
-    //                     data.totalTouchCondictions[j]++;
-    //             }
-    //         }
-    //         data.averageProgress = progressSum / dataArr.length;
-    //         data.alreadySuccessRate = data.alreadySuccessTimes / dataArr.length;
-    //         data.successRate = data.successTimes / dataArr.length;
-    //         console.log(data);
-    //         console.log(endTime - startTime);
-    //     }
-    //     // drawShowMapArray(exploreMap);
-    // })
+    cleanMineBoard.addEventListener('click', function(e) {
+        // isClick = true;
+        let x = Math.floor(e.offsetX / clean.squareWidth - 0.5),
+            y = Math.floor(e.offsetY / clean.squareWidth - 0.5);
+        let isStepByStep;
+        let operateTimes = operateTimesInput.value;
+        let dataArr = [],
+            data = {
+                touchMineTimes: 0,
+                averageProgress: 0,
+                alreadySuccessTimes: 0,
+                successTimes: 0,
+                totalCondictions: [0, 0, 0, 0],
+                totalTouchCondictions: [0, 0, 0, 0]
+            };
+        let i, j;
+        for (i = 0; i < isOneStep.length; i++) {
+            if (isOneStep[i].checked) {
+                isStepByStep = isOneStep[i].value;
+            }
+        }
+        if (isStepByStep == 1) {
+            if (isFirstClick) {
+                clean.createMap(x, y);
+                isFirstClick = false;
+                clean.expandMap(x, y);
+            } else {
+                clean.autoNextOneStep();
+            }
+            if (clean.isEnd) {
+                let thisData = {
+                    isTouchMine: clean.isTouchMine,
+                    progress: clean.progress,
+                    alreadySuccess: clean.alreadySuccess,
+                    success: clean.success,
+                    condiction: clean.condiction,
+                }
+                console.log(thisData);
+                isFirstClick = true;
+                clean.reset(Number(widthInput.value), Number(heightInput.value), Number(numInput.value), true);
+            }
+        } else {
+            let startTime = new Date();
+            for (i = 0; i < operateTimes; i++) {
+                if (i < operateTimes - 1) {
+                    clean.reset(Number(widthInput.value), Number(heightInput.value), Number(numInput.value), false);
+                } else {
+                    clean.reset(Number(widthInput.value), Number(heightInput.value), Number(numInput.value), true);
+                }
+                clean.createMap(x, y);
+                clean.expandMap(x, y);
+                while (!clean.isEnd) {
+                    clean.autoNextOneStep();
+                }
+                dataArr.push({
+                    isTouchMine: clean.isTouchMine,
+                    progress: clean.progress,
+                    alreadySuccess: clean.alreadySuccess,
+                    success: clean.success,
+                    condiction: clean.condiction,
+                    touchMineCondiction: clean.touchMineCondiction
+                });
+                console.log('is operated!');
+            }
+            let endTime = new Date()
+            let progressSum = 0;
+            for (i = 0; i < dataArr.length; i++) {
+                data.touchMineTimes += dataArr[i].isTouchMine;
+                progressSum += dataArr[i].progress;
+                data.alreadySuccessTimes += dataArr[i].alreadySuccess;
+                data.successTimes += dataArr[i].success;
+                for (j = 0; j < 4; j++) {
+                    data.totalCondictions[j] += dataArr[i].condiction[j];
+                    if (dataArr[i].touchMineCondiction == j)
+                        data.totalTouchCondictions[j]++;
+                }
+            }
+            data.averageProgress = progressSum / dataArr.length;
+            data.alreadySuccessRate = data.alreadySuccessTimes / dataArr.length;
+            data.successRate = data.successTimes / dataArr.length;
+            console.log(data);
+            console.log(endTime - startTime);
+        }
+        // drawShowMapArray(exploreMap);
+    })
 })()

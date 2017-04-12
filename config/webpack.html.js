@@ -10,8 +10,8 @@ htmlWebpackPluginArray.push(new HtmlWebpackPlugin({ //根据模板插入css/js�
     inject: 'body', //允许插件修改哪些内容，包括head与body
     hash: true, //为静态资源生成hash值
     minify: { //压缩HTML文件o c
-        removeComments: false, //移除HTML中的注释
-        collapseWhitespace: false //删除空白符与换行符
+        removeComments: true, //移除HTML中的注释
+        collapseWhitespace: true //删除空白符与换行符
     }
 }));
 
