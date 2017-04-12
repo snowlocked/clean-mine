@@ -80,5 +80,6 @@ module.exports = {
         historyApiFallback: true,
         inline: true,
         port: 8080, //端口你可以自定义
-    }
+    },
+    devtool :"#eval-source-map"
 }
