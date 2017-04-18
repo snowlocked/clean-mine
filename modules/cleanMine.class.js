@@ -703,8 +703,25 @@ class CleanMine {
         }
         if (this.unknownPointsNum == 0) {
             this.endOperate();
+        }else if(this.unknownPointsNum<0){
+            this.resetFlag();
         }
         // console.log("未知雷："+);
+    };
+    resetFlag(){
+        let safePointsNum = 0;
+        for(let [i,arr] of this.currentMap.entries()){
+            for(let [j,val] of arr.entries()){
+                if(val==100){
+                    this.currentMap[i][j]=99;
+                }else{
+                    safePointsNum++;
+                }
+            }
+        }
+        this.unknownPointsNum = this.M*this.N - safePointsNum;
+        this.unknownMinesNum = this.num
+        this.autoNextOneStep();
     };
     endOperate() {
         this.progress = (this.totalNum - this.unknownPointsNum) / this.totalNum;
