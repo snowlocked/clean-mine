@@ -18,38 +18,19 @@ class FiveChess {
 		this.reset();
 		console.log(this);
 	}
-	drawChessBoard() {
-		let startPoint = {
-				x: this.preWidth / 2,
-				y: this.preHeight / 2
-			},
-			endPoint = {
-				x: this.canvas.width - this.preWidth / 2,
-				y: this.canvas.height - this.preHeight / 2
-			}
-		this.context.strokeStyle = "#000";
-		for (let i = 0; i < 19; i++) {
-			this.context.beginPath();
-			this.context.moveTo(startPoint.x + i * this.preWidth, startPoint.y);
-			this.context.lineTo(startPoint.x + i * this.preWidth, endPoint.y);
-			this.context.stroke();
-		}
-		for (let i = 0; i < 19; i++) {
-			this.context.beginPath();
-			this.context.moveTo(startPoint.x, startPoint.y + this.preHeight * i);
-			this.context.lineTo(endPoint.x, startPoint.y + this.preHeight * i);
-			this.context.stroke();
-		}
-		let blackPoint = [3, 9, 15],
-			r = Math.min(this.preWidth, this.preHeight) / 4 * 0.8;
-		this.context.fillStyle = "#000";
-		for (let [i, x] of blackPoint.entries()) {
-			for (let [j, y] of blackPoint.entries()) {
-				this.context.beginPath();
-				this.context.arc(startPoint.x + x * this.preWidth, startPoint.y + y * this.preHeight, r, 0, 2 * PI)
-				this.context.fill();
-			}
-		}
+	reset() {
+		this.blackPlayer = [];
+		this.whitePlayer = [];
+		this.canvas.width = this.canvas.width;
+		this.canvas.height = this.canvas.height;
+		this.isDrewPoint = [];
+		this.blackWins = new Array(this.winCount).fill(0);
+		this.whiteWins = new Array(this.winCount).fill(0);
+		this.valuesOfBlack = [];
+		this.valuesOfWhite = [];
+		this.isEnd = false;
+		this.clickTimes = 0;
+		this.drawChessBoard();
 	}
 	drawChess(x, y) {
 		if (this.isEnd || this.isDrew(x, y, this.isDrewPoint)) {
@@ -84,6 +65,30 @@ class FiveChess {
 		this.canvas.addEventListener('click', function(e) {
 			call(e);
 		}, false)
+	}
+	autoDraw(type) {
+		let computerWins = [],
+			humanWins = []
+		if (type == "black") {
+			computerWins = this.blackWins;
+			humanWins = this.whiteWins;
+		} else if (type == "white") {
+			computerWins = this.whiteWins;
+			humanWins = this.blackWins;
+		}
+		let humanValues = this.getValues(humanWins, computerWins),
+			computerValues = this.getValues(computerWins, humanWins);
+		let autoDrawPoints = this.getMaxValue(humanValues, computerValues);
+		// console.log(humanValues);
+		// console.log(computerValues);
+		// console.log(autoDrawPoints);
+		this.drawRandomPoint(autoDrawPoints);
+	}
+	isDrew(x, y, points) {
+		for (let [i, value] of points.entries()) {
+			if (value.x == x && value.y == y) return true;
+		}
+		return false;
 	}
 	winMethods() {
 		let winMethodArr = [];
@@ -163,43 +168,38 @@ class FiveChess {
 			this.isEnd = true;
 		}
 	}
-	reset() {
-		this.blackPlayer = [];
-		this.whitePlayer = [];
-		this.canvas.width = this.canvas.width;
-		this.canvas.height = this.canvas.height;
-		this.isDrewPoint = [];
-		this.blackWins = new Array(this.winCount).fill(0);
-		this.whiteWins = new Array(this.winCount).fill(0);
-		this.valuesOfBlack = [];
-		this.valuesOfWhite = [];
-		this.isEnd = false;
-		this.clickTimes = 0;
-		this.drawChessBoard();
-	}
-	isDrew(x, y, points) {
-		for (let [i, value] of points.entries()) {
-			if (value.x == x && value.y == y) return true;
+	drawChessBoard() {
+		let startPoint = {
+				x: this.preWidth / 2,
+				y: this.preHeight / 2
+			},
+			endPoint = {
+				x: this.canvas.width - this.preWidth / 2,
+				y: this.canvas.height - this.preHeight / 2
+			}
+		this.context.strokeStyle = "#000";
+		for (let i = 0; i < 19; i++) {
+			this.context.beginPath();
+			this.context.moveTo(startPoint.x + i * this.preWidth, startPoint.y);
+			this.context.lineTo(startPoint.x + i * this.preWidth, endPoint.y);
+			this.context.stroke();
 		}
-		return false;
-	}
-	autoDraw(type) {
-		let computerWins = [],
-			humanWins = []
-		if (type == "black") {
-			computerWins = this.blackWins;
-			humanWins = this.whiteWins;
-		} else if (type == "white") {
-			computerWins = this.whiteWins;
-			humanWins = this.blackWins;
+		for (let i = 0; i < 19; i++) {
+			this.context.beginPath();
+			this.context.moveTo(startPoint.x, startPoint.y + this.preHeight * i);
+			this.context.lineTo(endPoint.x, startPoint.y + this.preHeight * i);
+			this.context.stroke();
 		}
-		let humanValues = this.getValues(humanWins, computerWins),
-			computerValues = this.getValues(computerWins, humanWins);
-		let autoDrawPoints = this.getMaxValue(humanValues, computerValues);
-		// console.log(humanValues);
-		// console.log(computerValues);
-		// console.log(autoDrawPoints);
-		this.drawRandomPoint(autoDrawPoints);
+		let blackPoint = [3, 9, 15],
+			r = Math.min(this.preWidth, this.preHeight) / 4 * 0.8;
+		this.context.fillStyle = "#000";
+		for (let [i, x] of blackPoint.entries()) {
+			for (let [j, y] of blackPoint.entries()) {
+				this.context.beginPath();
+				this.context.arc(startPoint.x + x * this.preWidth, startPoint.y + y * this.preHeight, r, 0, 2 * PI)
+				this.context.fill();
+			}
+		}
 	}
 	getValues(wins, otherWins) {
 		let values = this.__init2Array__(0);
