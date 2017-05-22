@@ -78,7 +78,7 @@ class FiveChess {
 		this.context.beginPath();
 		this.context.arc(point.x, point.y, r, 0, 2 * PI)
 		this.context.fill();
-		this.judge(type);
+		this.judge(type, x, y);
 	}
 	clickEvent(call) {
 		this.canvas.addEventListener('click', function(e) {
@@ -106,7 +106,7 @@ class FiveChess {
 		this.__init3Array__(19, 19 - 5 + 1, 5, function() {
 			initWinMethodPoints(k)
 		}, function(i, j, l) {
-			winMethodArr[i][j + l][k] = true;
+			winMethodArr[i][j + l].push(k);
 			winMethodPonints[k].push({
 				x: i,
 				y: j + l
@@ -115,7 +115,7 @@ class FiveChess {
 		this.__init3Array__(19 - 5 + 1, 19, 5, function() {
 			initWinMethodPoints(k)
 		}, function(i, j, l) {
-			winMethodArr[i + l][j][k] = true;
+			winMethodArr[i + l][j].push(k);
 			winMethodPonints[k].push({
 				x: i + l,
 				y: j
@@ -124,7 +124,7 @@ class FiveChess {
 		this.__init3Array__(19 - 5 + 1, 19 - 5 + 1, 5, function() {
 			initWinMethodPoints(k)
 		}, function(i, j, l) {
-			winMethodArr[i + l][j + l][k] = true;
+			winMethodArr[i + l][j + l].push(k);
 			winMethodPonints[k].push({
 				x: i + l,
 				y: j + l
@@ -133,7 +133,7 @@ class FiveChess {
 		this.__init3Array__(19 - 5 + 1, 19 - 5 + 1, 5, function() {
 			initWinMethodPoints(k)
 		}, function(i, j, l) {
-			winMethodArr[i + l][j + 5 - 1 - l][k] = true;
+			winMethodArr[i + l][j + 5 - 1 - l].push(k);
 			winMethodPonints[k].push({
 				x: i + l,
 				y: j + 5 - 1 - l
@@ -146,19 +146,16 @@ class FiveChess {
 			winMethodPonints: winMethodPonints
 		}
 	}
-	judge(type) {
-		let count = 0;
-		for (let i = 0; i < this.winCount; i++) {
-			count = 0;
-			for (let [j, value] of this[type + "Player"].entries()) {
-				if (this.winMethodArr[value.x][value.y][i]) {
-					count++;
-				}
-			}
-			this[type + 'Wins'][i] = count;
-			if (count == 5) {
-				alert(`${type} win this game!`);
+	judge(type, x, y) {
+		let winKs = this.winMethodArr[x][y];
+		for (let [j, winType] of winKs.entries()) {
+			// console.log(winType);
+			this[`${type}Wins`][winType]++;
+			// console.log(this[`${type}Wins`][winType]);
+			if (this[`${type}Wins`][winType] == 5) {
+				alert(`${type} player win this game!`);
 				this.isEnd = true;
+				return false;
 			}
 		}
 	}
@@ -168,8 +165,8 @@ class FiveChess {
 		this.canvas.width = this.canvas.width;
 		this.canvas.height = this.canvas.height;
 		this.isDrewPoint = [];
-		this.blackWins = [];
-		this.whiteWins = [];
+		this.blackWins = new Array(this.winCount).fill(0);
+		this.whiteWins = new Array(this.winCount).fill(0);
 		this.valuesOfBlack = [];
 		this.valuesOfWhite = [];
 		this.isEnd = false;
@@ -183,7 +180,106 @@ class FiveChess {
 		return false;
 	}
 	autoDraw(type) {
-
+		let computerWins = [],
+			humanWins = []
+		if (type == "black") {
+			computerWins = this.blackWins;
+			humanWins = this.whiteWins;
+		} else if (type == "white") {
+			computerWins = this.whiteWins;
+			humanWins = this.blackWins;
+		}
+		let humanValues = this.getValues(humanWins, computerWins),
+			computerValues = this.getValues(computerWins, humanWins);
+		let autoDrawPoints = this.getMaxValue(humanValues, computerValues);
+		console.log(humanValues);
+		console.log(computerValues);
+		console.log(autoDrawPoints);
+		this.drawRandomPoint(autoDrawPoints);
+	}
+	getValues(wins, otherWins) {
+		let values = this.__init2Array__(0);
+		for (let [i, count] of wins.entries()) {
+			if (count <= 0) continue;
+			for (let [j, point] of this.winMethodPonints[i].entries()) {
+				if (this.isDrew(point.x, point.y, this.isDrewPoint)) {
+					values[point.x][point.y] = -100000;
+				} else {
+					values[point.x][point.y] += this.getValue(wins[i] - otherWins[i]);
+					// values[point.x][point.y] -= this.getValue(otherWins[i] / 10);
+				}
+			}
+		}
+		return values;
+	}
+	getValue(value) {
+		switch (value) {
+			case 0:
+				return 0;
+			case 1:
+				return 10;
+			case 2:
+				return 100;
+			case 3:
+				return 2000;
+			case 4:
+				return 10000000;
+			default:
+				return 0;
+		}
+	}
+	getMaxValue(values1, values2) {
+		let max = 0,
+			maxPoints = [];
+		for (let [i, arr1] of values1.entries()) {
+			for (let [j, value] of arr1.entries()) {
+				if (value > max) {
+					max = value;
+					maxPoints = [{
+						x: i,
+						y: j
+					}];
+				} else if (value == max) {
+					maxPoints.push({
+						x: i,
+						y: j
+					})
+				}
+			}
+		}
+		for (let [i, arr1] of values2.entries()) {
+			for (let [j, value] of arr1.entries()) {
+				if (value > max) {
+					max = value;
+					maxPoints = [{
+						x: i,
+						y: j
+					}];
+				} else if (value == max) {
+					maxPoints.push({
+						x: i,
+						y: j
+					})
+				}
+			}
+		}
+		return maxPoints;
+	}
+	drawRandomPoint(points) {
+		let len = points.length,
+			i = parseInt(Math.random() * len),
+			point = points[i];
+		this.drawChess(point.x, point.y);
+	}
+	__init2Array__(num) {
+		let arr = [];
+		for (let i = 0; i < 19; i++) {
+			arr[i] = [];
+			for (let j = 0; j < 19; j++) {
+				arr[i][j] = num
+			}
+		}
+		return arr;
 	}
 	__init3Array__(i, j, l, callback, callback3, callback2) {
 		for (let x = 0; x < i; x++) {
