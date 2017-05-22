@@ -158,6 +158,10 @@ class FiveChess {
 				return false;
 			}
 		}
+		if (this.isDrewPoint.length >= 19 * 19) {
+			alert('打平了');
+			this.isEnd = true;
+		}
 	}
 	reset() {
 		this.blackPlayer = [];
@@ -192,9 +196,9 @@ class FiveChess {
 		let humanValues = this.getValues(humanWins, computerWins),
 			computerValues = this.getValues(computerWins, humanWins);
 		let autoDrawPoints = this.getMaxValue(humanValues, computerValues);
-		console.log(humanValues);
-		console.log(computerValues);
-		console.log(autoDrawPoints);
+		// console.log(humanValues);
+		// console.log(computerValues);
+		// console.log(autoDrawPoints);
 		this.drawRandomPoint(autoDrawPoints);
 	}
 	getValues(wins, otherWins) {
@@ -269,6 +273,7 @@ class FiveChess {
 		let len = points.length,
 			i = parseInt(Math.random() * len),
 			point = points[i];
+		console.log(point);
 		this.drawChess(point.x, point.y);
 	}
 	__init2Array__(num) {

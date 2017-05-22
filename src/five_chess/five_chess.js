@@ -2,7 +2,8 @@ import FiveChess from "../../modules/fiveChess.class.js";
 
 let fiveChess = new FiveChess('#canvas');
 let isAuto = true,
-	type = "white";
+	type = "white",
+	isEve = false;
 fiveChess.clickEvent(function(e) {
 	let point = {
 		x: parseInt(e.offsetX / fiveChess.preWidth),
@@ -10,6 +11,21 @@ fiveChess.clickEvent(function(e) {
 	}
 	fiveChess.drawChess(point.x, point.y);
 	isAuto && fiveChess.autoDraw(type);
+	let autoPlay;
+	if (isEve) {
+		autoPlay = setInterval(function() {
+			if (fiveChess.isEnd) {
+				clearInterval(autoPlay);
+			} else {
+				fiveChess.autoDraw(type);
+				if (type == "black") {
+					type = "white";
+				} else if (type == "white") {
+					type = "black";
+				}
+			}
+		}, 100)
+	}
 })
 
 document.querySelector("#reset").addEventListener('click', function() {
@@ -29,6 +45,7 @@ document.querySelector('.setting-box').addEventListener('click', function(e) {
 
 function setType(id) {
 	fiveChess.reset();
+	isEve = false;
 	switch (id) {
 		case "computer-first":
 			fiveChess.drawChess(9, 9);
@@ -41,6 +58,9 @@ function setType(id) {
 			break;
 		case "pvp":
 			isAuto = false;
+			break;
+		case "eve":
+			isEve = true;
 			break;
 	}
 }
