@@ -1,14 +1,15 @@
 {
   "presets": [
-    ["env", { "modules": false }],
-    "stage-2"
+    ["es2015", { "modules": false }],
+    "stage-2",
+    "react"
   ],
-  "plugins": ["transform-runtime"],
-  "comments": false,
-  "env": {
-    "test": {
-      "presets": ["env", "stage-2"],
-      "plugins": [ "istanbul" ]
-    }
-  }
+
+  "plugins": [
+    "transform-runtime",
+    // react-hot-loader occur error, when use `async-await` feature
+    // https://github.com/babel/babel/issues/5078
+    // https://github.com/gaearon/react-hot-loader/issues/391
+    "react-hot-loader/babel"
+  ]
 }
