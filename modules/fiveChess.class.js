@@ -225,7 +225,7 @@ class FiveChess {
 			case 2:
 				return 100;
 			case 3:
-				return 2000;
+				return 5000;
 			case 4:
 				return 10000000;
 			default:
