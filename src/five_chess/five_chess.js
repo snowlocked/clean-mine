@@ -1,4 +1,5 @@
 import FiveChess from "../../modules/fiveChess.class.js";
+import './five_chess.scss';
 
 let fiveChess = new FiveChess('#canvas');
 let isAuto = true,
