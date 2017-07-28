@@ -1,0 +1,40 @@
+#cleanMine-board {
+    margin: 50px auto;
+    display: block;
+    box-shadow: -2px -2px 2px #efefef, 5px 5px 5px #b9b9b9;
+    background-color: #eee;
+}
+
+input {
+    padding-left: 6px;
+    width: 50px;
+    text-align: right;
+}
+
+input[type='radio'] {
+    width: 20px;
+}
+
+.setting-box {
+    width: 570px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.title {
+    text-align: center;
+    font-weight: bold;
+    font-size: 30px;
+    margin-top: 50px;
+}
+
+.tc {
+    text-align: center;
+}
+
+#status {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+

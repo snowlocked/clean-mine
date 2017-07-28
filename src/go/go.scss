@@ -1,0 +1,57 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    cursor: url("http://www.005.tv/templets/muban/moe_style/image/cur/1.cur"), auto;
+}
+
+#canvas {
+    margin: 50px auto;
+    width: 570px;
+    height: 570px;
+    background: rgba(249, 214, 91, 1);
+    cursor: url("http://www.005.tv/templets/muban/moe_style/image/cur/2.cur"), auto;
+}
+
+#reset {
+    width: 100px;
+    height: 30px;
+    line-height: 30px;
+    border: 1px solid #000;
+    text-align: center;
+    margin: 20px auto;
+    cursor: pointer;
+}
+
+.setting-box,
+.auto-sample {
+    display: -webkit-flex;
+    display: flex;
+    width: 100%;
+    -webkit-justify-content: center;
+    justify-content: center;
+    margin-top:20px;
+    &>div {
+        border: 1px #000 solid;
+        margin-left: 10px;
+        width: 80px;
+        text-align: center;
+        cursor: pointer;
+        height: 30px;
+        line-height: 30px;
+    }
+}
+
+.auto-sample{
+    &>div{
+        width: 120px;
+    }
+}
+
+.is-choose {
+    background: #fe121d;
+    color: #fff;
+}
