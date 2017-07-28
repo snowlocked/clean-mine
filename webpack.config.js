@@ -7,7 +7,6 @@ var webpackDevServer = require('webpack-dev-server');
 var ExtractTextPlugin = require('extract-text-webpack-plugin');
 var OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 
-
 var CONFIG_PATH = path.resolve(__dirname, 'config');
 var pathConfig = require(CONFIG_PATH + '/path.config.js');
 // var OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
@@ -81,5 +80,5 @@ module.exports = {
         inline: true,
         port: 8080, //端口你可以自定义
     },
-    devtool :"#eval-source-map"
+    devtool: "#eval-source-map"
 }
