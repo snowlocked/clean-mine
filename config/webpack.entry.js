@@ -6,6 +6,7 @@ var pages = {
 		five_chess: pathConfig.SRC_PATH + '/five_chess/five_chess.js',
 		'black&white':pathConfig.SRC_PATH+'/black&white/black&white.js',
 		go:pathConfig.SRC_PATH+'/go/go.js',
+		animate:pathConfig.SRC_PATH+'/animate/animate.js',
 		modules: [
 			pathConfig.MODULE_PATH + '/cleanMine.class.js',
 			pathConfig.MODULE_PATH + '/fiveChess.class.js',
